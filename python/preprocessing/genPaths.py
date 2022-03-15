@@ -3,7 +3,7 @@ from numpy.linalg import norm
 from math import sqrt, cos, sin 
 
 # read g-code data from txt-file
-with open('gcode2.txt') as f:
+with open('gcode.txt') as f:
     lines = f.readlines()
     # create array to store path values of x1, y1, x2, y2
     pos = np.zeros((len(lines),4))
