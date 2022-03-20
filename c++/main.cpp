@@ -15,11 +15,11 @@ int main(int, char**) {
 
 
 
-    //rl::mdl::XmlFactory factory;
-	rl::mdl::UrdfFactory factory;
-	//std::shared_ptr<rl::mdl::Model> model(factory.create("/home/joschua/Coding/invKinematics3/src/myYumi.xml"));
-	rl::mdl::NloptInverseKinematics ik(kinematic.get());
-	std::shared_ptr<rl::mdl::Model> model(factory.create("/home/joschua/Coding/invKinematics3/src/yumi.urdf"));
+    rl::mdl::XmlFactory factory;
+	//rl::mdl::UrdfFactory factory;
+	std::shared_ptr<rl::mdl::Model> model(factory.create("/home/joschua/Coding/invKinematics3/src/myYumi.xml"));
+	//rl::mdl::NloptInverseKinematics ik(kinematic.get());
+	//std::shared_ptr<rl::mdl::Model> model(factory.create("/home/joschua/Coding/invKinematics3/src/yumi.urdf"));
 	rl::mdl::Kinematic* kinematics = dynamic_cast<rl::mdl::Kinematic*>(model.get());
 	rl::math::Vector q(7);
 	//q << 10, 10, -20, 30, 50, -10 ,-10;
