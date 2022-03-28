@@ -25,7 +25,7 @@ int main(int, char**) {
 	rl::mdl::Kinematic* kinematic_l = dynamic_cast<rl::mdl::Kinematic*>(model_l.get());
 	rl::math::Vector q_r(7);
 	rl::math::Vector q_l(7);
-	q_r << 0, 0, 30, 40, 50, 0, 0;
+	q_r << 0, 0, 0, 0, 0, 0, 0;
 	q_l << -10, 0, 10, 0, -20, 0, 0;
 	// 90 degrees at forth position is an offset
 	//q << -40, -90, 0, 90, 0, 0, 0;
@@ -46,11 +46,11 @@ int main(int, char**) {
 		}
 	}
 
-	/*
+	
 	// check if matrices are the same
-	std::cout << "RLJacobian" << kinematic_r->getJacobian() << std::endl;
-	std::cout << "myJacobian" << myJacobian_r << std::endl;
-	*/
+	std::cout << "RLJacobian \n" << kinematic_r->getJacobian() << std::endl;
+	std::cout << "myJacobian \n" << myJacobian_r << std::endl;
+	
 
 	// forward kinematics for the left arm
 	kinematic_l->setPosition(q_l);
@@ -64,13 +64,15 @@ int main(int, char**) {
 	std::cout << "Right Arm: Joint configuration in degrees: " << q_r.transpose() * rl::math::RAD2DEG << std::endl;
 	std::cout << "Right Arm: End-effector position: [m] " << position_r.transpose() << " orientation [deg] " << orientation_r.transpose() * rl::math::RAD2DEG << std::endl;
 	
+	/*
 	// extract orientation and position for the left arm
 	rl::math::Transform t_l = kinematic_l->getOperationalPosition(0);
 	rl::math::Vector3 position_l = t_l.translation();
 	rl::math::Vector3 orientation_l = t_l.rotation().eulerAngles(2, 1, 0).reverse();
 	std::cout << "Left Arm: Joint configuration in degrees: " << q_l.transpose() * rl::math::RAD2DEG << std::endl;
 	std::cout << "Left Arm: End-effector position: [m] " << position_l.transpose() << " orientation [deg] " << orientation_l.transpose() * rl::math::RAD2DEG << std::endl;
-	
+	*/
+
 	// do the inverse kinematics
 	// instantiate vars vor ASC
 	Eigen::Matrix<double, 7, 1> weightingFactors;
@@ -89,42 +91,46 @@ int main(int, char**) {
 	weightingFactors << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
 	// compute the gradient, use comfortpose class from broccoli, maybe extend class to get second part of cost function: manipulability
-	//nullSpaceGradient << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
+	// if gradient is zero then the ASC is just a resolved motion ik method
 	nullSpaceGradient << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
 	// obtained from forward kinematics, later the current configuration read from egm interface
-	actualPosition << 0.34042, 0.122111, 0.471841, 63.4073*rl::math::DEG2RAD, 150.858*rl::math::DEG2RAD, 177.902*rl::math::DEG2RAD;
+	actualPosition << 0.564465, 0.00153031,   0.418386, 52.44*rl::math::DEG2RAD, -151.976*rl::math::DEG2RAD,  157.197*rl::math::DEG2RAD;
 	// add 1 mm to the position part
-	desPosition << 0.34142, 0.123111, 1.472841, 63.4073*rl::math::DEG2RAD, 150.858*rl::math::DEG2RAD, 177.902*rl::math::DEG2RAD;
+	desPosition << 0.574465, 0.01153031,   0.428386, 52.44*rl::math::DEG2RAD, -151.976*rl::math::DEG2RAD,  157.197*rl::math::DEG2RAD;
 	// apply vel that results from actualPosition and desPosition
-	desVelocity << 0.2, 0.2, 0.2, 0, 0, 0;
+	desVelocity << 0.2, 0.2, 0.2, 0.0, 0.0, 0.0;
 
 	jointVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-	const double activationFactor = 0.1;
+	const double activationFactor = 1.0;
 	const double dt = 0.005;
 
+	/*
 	// max and min joint values
 	q_min << -168.5, -143.5, -168.5, -123.5, -290, -88, -229;
 	q_min *= rl::math::DEG2RAD;
 	q_max << 168.5, 43.5, 168.5, 80, 290, 138, 229;
 	q_max *= rl::math::DEG2RAD;
-	q_pose << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+	// q_pose << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+	*/
 
 
+	/*
 	// create CompfortPoseGradient object
 	broccoli::control::ComfortPoseGradient<7> cpg;
 	cpg.useRangeBasedScaling(q_min, q_max);
 	//cpg.setPose(q_pose);
-	nullSpaceGradient = cpg.process(q_r, jointVelocity);
+	//nullSpaceGradient = cpg.process(q_r, jointVelocity);
 	std::cout << "gradient" << nullSpaceGradient << std::endl;
+	*/
 
 	// create ASC object and execute its functions for inverse kinematics
 	broccoli::control::AutomaticSupervisoryControl<6,7> ik;
-	broccoli::control::Signal<double> sig;
+	//broccoli::control::Signal<double> sig;
 	ik.setWeighingMatrix(weightingFactors);
 	ik.setTaskSpaceConstraintFactor(activationFactor);
 	// set feedback gain for effective desired velocity
-	ik.setDriftCompensationGain(0.5);
+	ik.setDriftCompensationGain(1.0);
 	// set the target position and velocity
 	ik.setTarget(desPosition, desVelocity); // needs to be specified in order to give reasonable results for ik.outoutVelocity
 
@@ -132,10 +138,29 @@ int main(int, char**) {
 	ik.process(myJacobian_r, actualPosition, nullSpaceGradient, dt);
 
 	// obtain the computed velocity in task space - //sig = ik.outputVelocity();
-	std::cout << "output ik" << ik.outputVelocity() << std::endl;
+	std::cout << "output ik \n" << ik.outputVelocity() << std::endl;
 
+	
 	// perform integration over one timestep to obtain positions that can be send to robot
+	Eigen::Matrix<double, 7, 1> dq_r;
+	// following values a read from ik.outputVelocity
+	dq_r << -0.04, 0.08, 0.12, -0.16, 0.08, -0.24, 0.0;
+	dq_r *= dt;
 
+	std::cout << "current qs \n" << q_r << std::endl;
+	std::cout << "next qs \n" << q_r+dq_r << std::endl;
+
+	// copy of code above for checking for correctness
+	// forward kinematics for the right arm
+	kinematic_r->setPosition(q_r+dq_r);
+	kinematic_r->forwardPosition();
+
+	rl::math::Transform dt_r = kinematic_r->getOperationalPosition(0);
+	rl::math::Vector3 dposition_r = dt_r.translation();
+	rl::math::Vector3 dorientation_r = dt_r.rotation().eulerAngles(2, 1, 0).reverse();
+	std::cout << "Right Arm: Joint configuration in degrees: " << (q_r+dq_r).transpose() * rl::math::RAD2DEG << std::endl;
+	std::cout << "Right Arm: End-effector position: [m] " << dposition_r.transpose() << " orientation [deg] " << dorientation_r.transpose() * rl::math::RAD2DEG << std::endl;
+	
 	
 
 	return 0;
