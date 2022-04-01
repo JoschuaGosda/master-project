@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 # read g-code data from txt-file
-with open('preprocessing/gcode.txt') as f:
+with open('gcode.txt') as f:
     lines = f.readlines()
     # create array to store path values of x1, y1, x2, y2
     pos = np.zeros((len(lines),4))
@@ -31,7 +31,7 @@ pos1, pos2 = pos_split[0]*0.001, pos_split[1]*0.001 # transform to SI-units - [m
 # TODO: compute trajectory based on path of g-code
 # set a cutting speed, sample rate and compute necessary
 # position at every time step
-c_speed = 3000 * 0.001 * 1/60 # define cutting speed as 300 mm/min
+c_speed = 300 * 0.001 * 1/60 # define cutting speed as 300 mm/min
 st = 0.005 # highest possible sample time - 250 Hz
 
 
@@ -54,7 +54,7 @@ for i in range(1, len(pos1[:,0])):
         dp2_len = norm(dp2, 2) 
         # number of section in between original points
         nr_sect = int(round(dp1_len/(c_speed*st))) 
-        print(len(p1x), "+ ", nr_sect)
+        #print(len(p1x), "+ ", nr_sect)
 
         # append everthing to lists       
         for j in range(nr_sect):
@@ -79,7 +79,7 @@ v1.append(v1[-1])
 v1 = np.array(v1)
 v1 = np.hstack((v1, np.zeros((len(v1[:,0]), 1))))
 
-'''
+
 # do plots for tcp1
 fig = plt.figure()
 plt.scatter(p1[:,0], p1[:,1])
@@ -102,9 +102,8 @@ plt.show()
 # do plot for tcp2
 fig = plt.figure()
 plt.scatter(p2[:,0], p2[:,1])
-plt.scatter(pos2[:,0], pos2[:,1])
+plt.scatter(pos2[:,0], pos2[:,1], marker="x")
 plt.show()
-'''
 
 
 # number of points in paths
@@ -173,9 +172,18 @@ v2 = list(map(lambda x, y: (x-y)/st, p_next, p_is))
 # add additional velocity entries at start and end to match others arrays lengths
 v2.insert(0, v2[0])
 v2.append(v2[-1])
-
-# make v2 an array 
+# list to array conversion
 v2 = np.array(v2)
+
+# to the same for the orientation
+o_next = ang[1:-1, :]
+o_is   = ang[0:-2, :]
+odot = list(map(lambda x, y: (x-y)/st, o_next, o_is))
+# add additional velocity entries at start and end to match others arrays lengths
+odot.insert(0, odot[0])
+odot.append(odot[-1])
+# list to array conversion
+odot = np.array(odot)
 
 # do some tests that check for correctness
 # check if distance between two final points matches wires length
@@ -189,17 +197,18 @@ for i, (r12,r22_) in enumerate(zip(dist_12, dist_22_)):
     assert np.abs(r12 - wLen) < 0.00001, "path coordinate of p2 violates wire's constraint"
     assert (effLen[i, 0] - wLen - r22_) < 0.00001, "path coordinate of p2 violates against to be compensated length difference"
 
+
 # plot the data for visualisation
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.plot(p1m[:,0],p1m[:,1],p1m[:,2])
-ax.plot(p2m[:,0],p2m[:,1],p2m[:,2])
-ax.plot(p2m_ref[:,0],p2m_ref[:,1],p2m_ref[:,2])
+#ax.scatter(p1m[:,0],p1m[:,1],p1m[:,2])
+ax.scatter(p2m[:,0],p2m[:,1],p2m[:,2])
+ax.scatter(p2m_ref[:,0],p2m_ref[:,1],p2m_ref[:,2])
 ax.set_xlim(0,0.170)
 ax.set_ylim(0,0.100)
 ax.set_zlim(0.795,0.805)
 plt.show()
 
-# TODO: in the end you wanna save py data as:
-# p1x p1y p1z p1alpha p1beta p1gamma v1x v1y v1z p1dalpha p1dbeta p1dgamma + p2
-
+# make data ready for export
+traj_data = np.hstack((p1m, v1, p2m, v2, ang, odot))
+np.save('traj_data', traj_data)
