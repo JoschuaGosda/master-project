@@ -33,8 +33,25 @@ make install
 ## Python
  To keep things clean it is best to install them within a virtual environment. Follow the steps to create a virtual environment and install the neccessary dependencies:
 
-Create a directory for your virtual environment within the python folder
-Create a virtual environment running `python3 -m venv /path/to/venv/directory`
-Activate the virtual environment running `source /path/to/venv/directory/bin/activate`
-Install the dependencies for the abb-egm-client following the instructions in the respective README file
-Install all other dependencies with `pip install -r requirements.txt`
+1. Create a directory for your virtual environment within the python folder
+2. Create a virtual environment running `python3 -m venv /path/to/venv/directory`
+3. Activate the virtual environment running `source /path/to/venv/directory/bin/activate`
+4. Install the dependencies for the abb-egm-client:
+
+- Install protoc from protobuf. There are prebuilt binaries available from
+GitHub if protoc is not available in your package manager.
+- Find egm.proto in either %LOCALAPPDATA%\ABB\RobotWare\RobotWare_6.XXXXX\utility\Template\EGM\egm.proto or on the robot.
+
+
+Run protoc to generate protobuf classes for python. Substitute `$SRC_DIR` for the location of `egm.proto`
+
+`protoc --python_out=abb_egm_pyclient $SRC_DIR/egm.proto`
+
+Install this package in your environment of choice.
+
+```
+cd abb_egm_pyclient
+pip install -e .
+```
+
+5. Install all other dependencies with `pip install -r requirements.txt`
