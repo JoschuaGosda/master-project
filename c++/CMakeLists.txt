@@ -7,8 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Include cmake modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# include header files for rt, could not be found following the tutorial
-include_directories(/usr/include/rl-0.7.0 /opt/cppDeps/eigen-3.4.0 /usr/local/include/pybind11) 
+# include header files for rt and eigen
+include_directories(/opt/eigen-3.4.0 /opt/rl-0.7.0/src /usr/include/python3.8) 
 
 find_package (broccoli 3.0.0 COMPONENTS eigen REQUIRED)
 find_package(RL COMPONENTS MDL REQUIRED)
@@ -24,5 +24,5 @@ target_link_libraries (
     eat::broccoli
 )
 
-#add_subdirectory(deps/pybind11)
+#add_subdirectory(/usr/locale/include/pybind11)
 pybind11_add_module(example main.cpp)
