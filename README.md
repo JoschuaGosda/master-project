@@ -21,7 +21,7 @@ cmake --install build
 ```
 Installation instruction for pybind11 can be also found [here](https://pybind11.readthedocs.io/en/stable/compiling.html#building-with-cmake)
 
-#### broccoli
+### broccoli
 cd in cloned brocolli repo. Then run the commands to install brocolli to your system
 ```
 mkdir build
