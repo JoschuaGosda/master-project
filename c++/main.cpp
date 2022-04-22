@@ -1,5 +1,5 @@
 #include <iostream>
-#include "gpm.h"
+#include "gpm.hpp"
 
 #include <Eigen/Eigen>
 

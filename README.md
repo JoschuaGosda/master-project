@@ -14,12 +14,18 @@ Fortunately there is another option to specifies the kinematics for a robot over
 ## C++ 
 The project needs a few dependencies to be installed. These are broccoli, the robotics library as well as pybind11 in order to create bindings between Python and C++ code. To prevent any troubles while installing them in the next step make sure you have the following packages installed. Check or otherwise install them running `sudo apt install cmake python3-dev python3-distutils` in the command line.
 
-Download the robotics library and eigen and put them into `/opt/`. Doing so cmake will know where to find the respective header files.
- 
-[Brocolli](https://gitlab.lrz.de/AM/broccoli) and [pybind11](https://github.com/pybind/pybind11) are directly installed to the system. Therefore clone the respective repos using git. 
-
+Download the robotics library and eigen and put them into `/opt/`.
 ### pybind11
-Run the following commands to install pybind11 globally to your system
+There are several ways how to use pybind11. Number 1 was tested succesfully
+
+1. Inlcude pybind11 as submodule
+Within the `c++` folder run
+```
+git submodule add -b stable https://github.com/pybind/pybind11 deps/pybind11
+git submodule update --init
+```
+
+2. Run the following commands to install pybind11 globally to your system
 ```
 # Classic CMake
 cd pybind11
@@ -37,11 +43,43 @@ cmake --install build
 Installation instruction for pybind11 can be also found [here](https://pybind11.readthedocs.io/en/stable/compiling.html#building-with-cmake)
 
 ### broccoli
-cd in cloned brocolli repo. Then run the commands to install brocolli to your system
+Brocolli can be directly installed to the system. Therefore clone the respective repo using git. Then cd in cloned brocolli repo and run the commands to install brocolli to your system
 ```
 mkdir build
 cd build
 cmake ..
 make install
 ```
+## Python
+ To keep things clean it is best to install them within a virtual environment. Follow the steps to create a virtual environment and install the neccessary dependencies:
+
+Create a directory for your virtual environment within the python folder
+Create a virtual environment running `python3 -m venv /path/to/venv/directory`
+Activate the virtual environment running `source /path/to/venv/directory/bin/activate`
+Install the dependencies for the abb-egm-client following the instructions in the respective README file
+Install all other dependencies with `pip install -r requirements.txt`
+1. Create a directory for your virtual environment within the python folder
+2. Create a virtual environment running `python3 -m venv /path/to/venv/directory`
+3. Activate the virtual environment running `source /path/to/venv/directory/bin/activate`
+4. Install the dependencies for the abb-egm-client:
+
+- Install protoc from protobuf. There are prebuilt binaries available from
+GitHub if protoc is not available in your package manager.
+- Find egm.proto in either %LOCALAPPDATA%\ABB\RobotWare\RobotWare_6.XXXXX\utility\Template\EGM\egm.proto or on the robot.
+
+
+Run protoc to generate protobuf classes for python. Substitute `$SRC_DIR` for the location of `egm.proto`
+
+`protoc --python_out=abb_egm_pyclient $SRC_DIR/egm.proto`
+
+Install this package in your environment of choice.
+
+```
+cd abb_egm_pyclient
+pip install -e .
+```
+
+5. Install all other dependencies with `pip install -r requirements.txt`
+
+
 

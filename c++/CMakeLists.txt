@@ -16,7 +16,7 @@ find_package(RL COMPONENTS MDL REQUIRED)
 
 
 
-add_executable(myProgram gpm.cpp main.cpp gpm.h)
+add_executable(myProgram gpm.cpp main.cpp gpm.hpp)
 
 target_link_libraries (
     myProgram 
