@@ -15,7 +15,7 @@
 Eigen::Matrix<double, 7, 1> gpm(Eigen::Matrix<double, 7, 1> &joint_angles, Eigen::Matrix<double, 6, 1> &desPosition) {
 
 	rl::mdl::UrdfFactory factory;
-	std::shared_ptr<rl::mdl::Model> model_r(factory.create("/home/joschua/Coding/invKinematics4/master-project/c++/src/urdf/yumi_right.urdf"));
+	std::shared_ptr<rl::mdl::Model> model_r(factory.create("/home/joschua/Coding/forceControl/master-project/c++/src/urdf/yumi_right.urdf"));
 	rl::mdl::Kinematic* kinematic_r = dynamic_cast<rl::mdl::Kinematic*>(model_r.get());
 	rl::math::Vector q_r(7);
 	q_r << 10, 10, 10, 10, 10, 10, 10;

@@ -25,4 +25,4 @@ target_link_libraries (
 )
 
 add_subdirectory(deps/pybind11)
-pybind11_add_module(invKin main.cpp)
+pybind11_add_module(example pybind11_example.cpp)

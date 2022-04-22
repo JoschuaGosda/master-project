@@ -1,32 +1,24 @@
 #include <iostream>
-
-#include <pybind11/pybind11.h>
-#include <pybind11/eigen.h>
-
-
 #include "gpm.h"
 
-namespace py = pybind11;
+#include <Eigen/Eigen>
 
 
 int main(int, char**) {
+	
 	Eigen::Matrix<double, 7, 1> joint_angles;
 	Eigen::Matrix<double, 7, 1> result;
 	Eigen::Matrix<double, 6, 1> desPosition;
 	joint_angles << 0, 0, 0, 0, 0, 0, 0;
-	desPosition << 0, 0, 0, 0, 0, 0, 0;
+	desPosition << 0, 0, 0, 0, 0, 0;
 
 	result = gpm(joint_angles, desPosition);
 	std::cout << "result: \n" << result << std::endl;
-
+	
 	return 0;
 }
 
 
-PYBIND11_MODULE(example, ik) {
-    ik.doc() = "pybind11 binding to C++ function that computes IK based on GPM"; // optional module docstring
-    ik.def("gpm", gpm, "A function that takes the current joint values and the desired task space values for the next step and returns the necessary joint angles, respectively", py::return_value_policy::copy);
-}
 
 
 
