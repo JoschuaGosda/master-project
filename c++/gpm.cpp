@@ -12,99 +12,127 @@
 #include <rl/mdl/UrdfFactory.h>
 
 
-Eigen::Matrix<double, 7, 1> gpm(Eigen::Matrix<double, 7, 1> &joint_angles, Eigen::Matrix<double, 6, 1> &desPosition) {
+std::pair<Eigen::Matrix<double, 7, 1>, Eigen::Matrix<double, 6, 1>> gpm(Eigen::Matrix<double, 6, 1> &desPosition, Eigen::Matrix<double, 6, 1> &desVelocity, 
+Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelocity,
+Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1.0, const double dt = 0.005, const int arm = 0) {
+/*
+	desPosition and desVelocity have to be modified
+*/
+	// VARIABLES INITIALIZATION
+	Eigen::Matrix<double, 6, 7> J;
 
-	rl::mdl::UrdfFactory factory;
-	std::shared_ptr<rl::mdl::Model> model_r(factory.create("/home/joschua/Coding/forceControl/master-project/c++/src/urdf/yumi_right.urdf"));
-	rl::mdl::Kinematic* kinematic_r = dynamic_cast<rl::mdl::Kinematic*>(model_r.get());
-	rl::math::Vector q_r(7);
-	q_r << 10, 10, 10, 10, 10, 10, 10;
-	q_r *= rl::math::DEG2RAD;
-
-	// forward kinematics for the right arm
-	kinematic_r->setPosition(q_r);
-	kinematic_r->forwardPosition();
-	kinematic_r->calculateJacobian();
-
-	Eigen::Matrix<double, 6, 7> myJacobian_r;
-
-	// copy entries from RL jacobian to Eigen::jacobian in order to use it in brocolli function
-	for (int i = 0; i < 7; i++){
-		for (int j = 0; j < 6; j++){
-			myJacobian_r(j, i) = kinematic_r->getJacobian()(j, i);
-		}
-	}
-
-	
-	// check if matrices are the same
-	std::cout << "RLJacobian \n" << kinematic_r->getJacobian() << std::endl;
-	std::cout << "myJacobian \n" << myJacobian_r << std::endl;
-	std::cout << "Manipulability meassure \n" << kinematic_r->calculateManipulabilityMeasure() << std::endl;
-	
-
-	// extract orientation and position for the right arm
-	rl::math::Transform t_r = kinematic_r->getOperationalPosition(0);
-	rl::math::Vector3 position_r = t_r.translation();
-	rl::math::Vector3 orientation_r = t_r.rotation().eulerAngles(2, 1, 0).reverse();
-	std::cout << "Right Arm: Joint configuration in degrees: " << q_r.transpose() * rl::math::RAD2DEG << std::endl;
-	std::cout << "Right Arm: End-effector position: [m] " << position_r.transpose() << " orientation [deg] " << orientation_r.transpose() * rl::math::RAD2DEG << std::endl;
-	
-
-	// do the inverse kinematics
-	// instantiate vars vor ASC
-	Eigen::Matrix<double, 7, 1> weightingFactors;
-	Eigen::Matrix<double, 7, 1> nullSpaceGradient;
+	// instantiate vars vor Automatic Supervisory Control (ASC)
+	Eigen::Matrix<double, 7, 1> nullSpaceGradient = Eigen::Matrix<double, 7, 1>::Zero();
+	Eigen::Matrix<double, 7, 1> manipGradient = Eigen::Matrix<double, 7, 1>::Zero();
 	Eigen::Matrix<double, 6, 1> actualPosition;
-	//Eigen::Matrix<double, 6, 1> desPosition;
-	Eigen::Matrix<double, 6, 1> dPosition;
-	Eigen::Matrix<double, 7, 1> jointVelocity;
-	Eigen::Matrix<double, 6, 1> desVelocity;
 
-	// instantiate vars for cpg
+	// create ASC object and execute its functions for inverse kinematics
+	broccoli::control::AutomaticSupervisoryControl<6,7> ik;
+	
+	// define min and max values for the joints of Yumi
 	Eigen::Matrix< double, 7, 1> q_min;
 	Eigen::Matrix< double, 7, 1> q_max;
-	//Eigen::Matrix< double, 7, 1> q_pose;
-
-	// does not to be modified?
-	weightingFactors << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
-
-	// compute the gradient, use comfortpose class from broccoli, maybe extend class to get second part of cost function: manipulability
-	// if gradient is zero then the ASC is just a resolved motion ik method
-	nullSpaceGradient << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-
-	// obtained from forward kinematics, later the current configuration read from egm interface
-	//actualPosition << 0.564465, 0.00153031,   0.418386, 52.44*rl::math::DEG2RAD, -151.976*rl::math::DEG2RAD,  157.197*rl::math::DEG2RAD;
-	actualPosition << position_r.transpose()(0), position_r.transpose()(1), position_r.transpose()(2), orientation_r.transpose()(0), orientation_r.transpose()(1), orientation_r.transpose()(2);
-	// add 1 mm to the position part
-	dPosition << 0.01, 0.01, 0.01, 0.0, 0.0, 0.0;
-	desPosition = actualPosition + dPosition;
-	std::cout << "desPosition \n" << desPosition << std::endl;
-	// apply vel that results from actualPosition and desPosition
-	desVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-
-	jointVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-	const double activationFactor = 1.0;
-	const double dt = 0.005;
-
-	
-	// max and min joint values
 	q_min << -168.5, -143.5, -168.5, -123.5, -290, -88, -229;
 	q_min *= rl::math::DEG2RAD;
 	q_max << 168.5, 43.5, 168.5, 80, 290, 138, 229;
 	q_max *= rl::math::DEG2RAD;
-	// q_pose << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-	
-	
+	// instantiate vars for Comfort Pose Gradient (CPG)
+	Eigen::Matrix<double, 7, 1> cpgGradient = Eigen::Matrix<double, 7, 1>::Zero();
 	// create CompfortPoseGradient object
 	broccoli::control::ComfortPoseGradient<7> cpg;
-	cpg.useRangeBasedScaling(q_min, q_max);
-	//cpg.setPose(q_pose);
-	nullSpaceGradient = cpg.process(q_r, jointVelocity);
-	std::cout << "gradient \n" << nullSpaceGradient << std::endl;
+	
+	// desired joint values after doing the inverse kinematics
+	Eigen::Matrix<double, 7, 1> desq;
+	
+	// FORWARD KINEMATICS
+	rl::mdl::UrdfFactory factory;
+	
+	// Use the left arm as default
+	std::shared_ptr<rl::mdl::Model> model(factory.create("/home/joschua/Coding/forceControl/master-project/c++/src/urdf/yumi_left.urdf"));
+	// overwrite model if right arm is choosen
+	if (arm == 1){
+		std::shared_ptr<rl::mdl::Model> model(factory.create("/home/joschua/Coding/forceControl/master-project/c++/src/urdf/yumi_right.urdf"));
+	};
+
+	rl::mdl::Kinematic* kinematic = dynamic_cast<rl::mdl::Kinematic*>(model.get());
+
+	// forward kinematics for the right arm
+	kinematic->setPosition(jointAngles);
+	kinematic->forwardPosition();
+	kinematic->calculateJacobian();
+
+	// copy entries from RL jacobian to Eigen::jacobian in order to use it in brocolli function
+	for (int i = 0; i < 7; i++){
+		for (int j = 0; j < 6; j++){
+			J(j, i) = kinematic->getJacobian()(j, i);
+		}
+	}
+
+	// check if matrices are the same
+	//std::cout << "RLJacobian \n" << kinematic->getJacobian() << std::endl;
+	//std::cout << "myJacobian \n" << J << std::endl;
+	std::cout << "Manipulability meassure \n" << kinematic->calculateManipulabilityMeasure() << std::endl;
+	
+	// extract orientation and position for the right arm
+	rl::math::Transform t = kinematic->getOperationalPosition(0);
+	rl::math::Vector3 position = t.translation();
+	rl::math::Vector3 orientation = t.rotation().eulerAngles(2, 1, 0).reverse();
+	std::cout << "Joint configuration in degrees: " << jointAngles.transpose() * rl::math::RAD2DEG << std::endl;
+	std::cout << "End-effector position: [m] " << position.transpose() << " orientation [deg] " << orientation.transpose() * rl::math::RAD2DEG << std::endl;
 	
 
-	// create ASC object and execute its functions for inverse kinematics
-	broccoli::control::AutomaticSupervisoryControl<6,7> ik;
+	// INVERSE KINEMATICS
+	// obtained from forward kinematics, later the current configuration read from egm interface
+	actualPosition << position.transpose()(0), position.transpose()(1), position.transpose()(2), orientation.transpose()(0), orientation.transpose()(1), orientation.transpose()(2);
+	// add 1 mm to the position part
+	//dPosition << 0.01, 0.01, 0.01, 0.0, 0.0, 0.0;
+	//desPosition = actualPosition + dPosition;
+	std::cout << "desPosition \n" << desPosition << std::endl;
+	// apply vel that results from actualPosition and desPosition
+	//desVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+	// TODO: this needs to be changed soon!
+	//desVelocity << dPosition * 1/dt; 
+	
+	// compute CPG gradient
+	cpg.useRangeBasedScaling(q_min, q_max);
+	cpgGradient = cpg.process(jointAngles, jointVelocity);	// if gradient is zero then the ASC is just a resolved motion ik method
+	
+	// compute Jacobian derivative - code snippet from Jonas Wittmann
+	std::array<Eigen::Matrix<double, 6, 7>, 7> dJ; // NOLINT
+    for (auto& matrix : dJ) {
+        matrix = Eigen::Matrix<double, 6, 7>::Zero();
+    }
+    Eigen::Matrix<double, 3, 7> transJ = Eigen::Matrix<double, 3, 7>::Zero();
+    transJ = J.block<3, 7>(0, 0);
+    Eigen::Matrix<double, 3, 7> rotJ = Eigen::Matrix<double, 3, 7>::Zero();
+    rotJ = J.block<3, 7>(3, 0);
+    const int numOfJoints = 7;
+    for (int jj = 0; jj < numOfJoints; ++jj) {
+        for (int ii = jj; ii < numOfJoints; ++ii) {
+            dJ.at(jj).block<3, 1>(0, ii) = rotJ.col(jj).cross(transJ.col(ii));
+            dJ.at(jj).block<3, 1>(3, ii) = rotJ.col(jj).cross(rotJ.col(ii));
+            if (ii != jj) {
+                dJ.at(ii).block<3, 1>(0, jj) = dJ.at(jj).block<3, 1>(0, ii);
+            }
+        }
+    }
+
+	// compute Manipulability gradient
+	// Compute the derivative of the Jacobian w.r.t. the joint angles.
+    //Eigen::Matrix<double, 6, 7>, 7> ddJ_r = jacobianDerivative(J);
+    // Current cost.
+    double cost = sqrt((J * J.transpose()).determinant());
+    // Compute the manipulability gradient.
+    
+    for (int jj = 0; jj < 7; ++jj) {
+        manipGradient[jj] = cost * ((J * J.transpose()).inverse() * dJ.at(jj) * J.transpose()).trace();
+    }
+
+	// add both gradients
+	nullSpaceGradient = manipGradient + cpgGradient;
+	std::cout << "gradient \n" << nullSpaceGradient << std::endl;
+
+	// do the inverse kinematics
 	ik.setWeighingMatrix(weightingFactors);
 	ik.setTaskSpaceConstraintFactor(activationFactor);
 	// set feedback gain for effective desired velocity
@@ -113,31 +141,32 @@ Eigen::Matrix<double, 7, 1> gpm(Eigen::Matrix<double, 7, 1> &joint_angles, Eigen
 	ik.setTarget(desPosition, desVelocity); // needs to be specified in order to give reasonable results for ik.outoutVelocity
 
 	// compute the desired velocities in taskspace
-	ik.process(myJacobian_r, actualPosition, nullSpaceGradient, dt);
+	ik.process(J, actualPosition, nullSpaceGradient, dt);
 
 	// obtain the computed velocity in task space
 	//std::cout << "output ik \n" << ik.outputVelocity() << std::endl;
 	//std::cout << "test \n" << ik.outputVelocity().value() << std::endl;
 	
 	// perform integration over one timestep to obtain positions that can be send to robot
-	Eigen::Matrix<double, 7, 1> dq_r;
-	dq_r << ik.outputVelocity().value();
+	desq << ik.outputVelocity().value();
 	//std::cout << "test2 \n" << dq_r << std::endl;
-	dq_r *= dt;
+	desq *= dt;
 
-	std::cout << "current qs in RAD \n" << q_r* rl::math::RAD2DEG << std::endl;
-	std::cout << "next qs in RAD \n" << (q_r+dq_r)* rl::math::RAD2DEG << std::endl;
+	std::cout << "current qs in DEG \n" << jointAngles* rl::math::RAD2DEG << std::endl;
+	std::cout << "next qs in DEG \n" << (jointAngles+desq)* rl::math::RAD2DEG << std::endl;
 
 	// copy of code above to check for correctness
 	// forward kinematics for the right arm
-	kinematic_r->setPosition(q_r+dq_r);
-	kinematic_r->forwardPosition();
+	kinematic->setPosition(jointAngles+desq);
+	kinematic->forwardPosition();
 
-	rl::math::Transform dt_r = kinematic_r->getOperationalPosition(0);
-	rl::math::Vector3 dposition_r = dt_r.translation();
-	rl::math::Vector3 dorientation_r = dt_r.rotation().eulerAngles(2, 1, 0).reverse();
-	std::cout << "Right Arm: Joint configuration in degrees: " << (q_r+dq_r).transpose() * rl::math::RAD2DEG << std::endl;
-	std::cout << "Right Arm: End-effector position: [m] " << dposition_r.transpose() << " orientation [deg] " << dorientation_r.transpose() * rl::math::RAD2DEG << std::endl;
+	rl::math::Transform dest = kinematic->getOperationalPosition(0);
+	rl::math::Vector3 dposition = dest.translation();
+	rl::math::Vector3 dorientation = dest.rotation().eulerAngles(2, 1, 0).reverse();
+	std::cout << "Right Arm: Joint configuration in degrees: " << (jointAngles+desq).transpose() * rl::math::RAD2DEG << std::endl;
+	std::cout << "Right Arm: End-effector position: [m] " << dposition.transpose() << " orientation [deg] " << dorientation.transpose() * rl::math::RAD2DEG << std::endl;
 	
-	return dq_r;
+	// return desired joint angles for the next step and current pose for computing the IK accuracy
+	//return desq;
+	return std::make_pair(desq, actualPosition);
 }
