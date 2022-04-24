@@ -1,5 +1,5 @@
 #include <Eigen/Eigen>
-#include <rl/mdl/Model.h>
+
 
 std::pair<Eigen::Matrix<double, 7, 1>, Eigen::Matrix<double, 6, 1>> gpm(Eigen::Matrix<double, 6, 1> &desPosition, Eigen::Matrix<double, 6, 1> &desVelocity, 
 Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelocity,
