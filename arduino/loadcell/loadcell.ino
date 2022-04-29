@@ -14,7 +14,7 @@
 const int LOADCELL_DOUT_PIN = 2;
 const int LOADCELL_SCK_PIN = 3;
 
-const float calibration_weight = 1000.0;
+const float calibration_weight = 500.0;
 
 
 HX711 scale;
@@ -70,7 +70,7 @@ void loop() {
   //Serial.print("get value:\t");
   Serial.println(scale.get_value());
   //Serial.print("\t| average:\t");
-  Serial.println(scale.get_units(10), 1);
+  //Serial.println(scale.get_units(10), 1);
 
   //scale.power_down();			        // put the ADC in sleep mode
   //delay(5);

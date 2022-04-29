@@ -3,8 +3,8 @@ from time import sleep, time
 
 '''
 Instructions how to use this:
-1. reboot arduino which then waits for any input over serial to calibrate 
-2. run this python script
+#1. reboot arduino which then waits for any input over serial to calibrate 
+2. run this python script and reboot arduino directly after that
 3. hit ENTER as soon as weight to calibrate is mounted to load cell
 4. readings that are sent from arduino are read and ready for processing
 '''
@@ -14,7 +14,7 @@ Instructions how to use this:
 ports = serial.tools.list_ports.comports()
 serialInst = serial.Serial()
 
-myPort = '/dev/ttyACM0'
+myPort = '/dev/ttyACM1'
 myBaudRate = 38400
 portList = []
 
