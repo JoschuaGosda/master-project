@@ -1,12 +1,4 @@
-/**
- *
- * HX711 library for Arduino - example file
- * https://github.com/bogde/HX711
- *
- * MIT License
- * (c) 2018 Bogdan Necula
- *
-**/
+
 #include "HX711.h"
 
 
@@ -15,6 +7,7 @@ const int LOADCELL_DOUT_PIN = 2;
 const int LOADCELL_SCK_PIN = 3;
 
 const float calibration_weight = 500.0;
+float zero_reading, load_reading;
 
 
 HX711 scale;
@@ -29,48 +22,64 @@ void setup() {
   // By omitting the gain factor parameter, the library
   // default "128" (Channel A) is used here.
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
-  scale.set_scale();
-  scale.tare();  
-  scale.get_units(10);
+
+  //Serial.print("offset: ");
+  //Serial.print(scale.get_offset(), DEC);
+  //Serial.print("\t scale: ");
+  //Serial.println(scale.get_scale(), DEC);
+
+  Serial.println("tare the scale. in 3 sec. Make sure it is unloaded");
+
+  delay(3);
 
 
-  delay(2);
+  // determine the offset - setup: no load
+  scale.tare();  // sets the offset value within scale to current value of reading
+  zero_reading = scale.read_average(10); //average over 10 vales
+  //scale.set_scale(); 
+  //scale.get_units(10);
+
+  //Serial.print("offset: ");
+  //Serial.print(scale.get_offset(), DEC);
+  //Serial.print("\t scale: ");
+  //Serial.println(scale.get_scale(), DEC);
+
+
+  //delay(2);
   Serial.println("mount the known weight to the load cell and press ENTER to proceed with calibration");
   int incomingByte = 0;
   // Calibration of the load cell
   while(Serial.available() == 0) {
     }
-    scale.set_scale(calibration_weight);  // this value is obtained by calibrating the scale with known weights; see the README for details
-    incomingByte = Serial.read();   // clear the receive buffer by assigning value to var
+    
+  load_reading = scale.read_average(10);
+  Serial.print("zero and load reading: ");
+  Serial.print(zero_reading, DEC);
+  Serial.print("  ");
+  Serial.println(load_reading, DEC);
+  scale.set_scale((load_reading - zero_reading)/calibration_weight);  // this value is obtained by calibrating the scale with known weights; see the README for details
+  incomingByte = Serial.read();   // clear the receive buffer by assigning value to var
+
+  Serial.println("set scale....");
+  Serial.print("offset: ");
+  Serial.print(scale.get_offset(), DEC);
+  Serial.print("\t scale: ");
+  Serial.println(scale.get_scale(), DEC);
+
+  Serial.print("get_value: ");
+  Serial.print(scale.get_value());
+  Serial.print("\t get_units: ");
+  Serial.println(scale.get_units());
+    
 
   
   Serial.println("load cell is setup. Start reading now...");
   delay(1); // delay that python code sees the correct starting byte
-  /*
-  Serial.println("After setting up the scale:");
-
-  Serial.print("read: \t\t");
-  Serial.println(scale.read());                 // print a raw reading from the ADC
-
-  Serial.print("read average: \t\t");
-  Serial.println(scale.read_average(20));       // print the average of 20 readings from the ADC
-
-  Serial.print("get value: \t\t");
-  Serial.println(scale.get_value(5));		// print the average of 5 readings from the ADC minus the tare weight, set with tare()
-
-  Serial.print("get units: \t\t");
-  Serial.println(scale.get_units(5), 1);        // print the average of 5 readings from the ADC minus tare weight, divided
-						// by the SCALE parameter set with set_scale
-
-  Serial.println("Readings:");
-  */
 }
 
 void loop() {
   //Serial.print("get value:\t");
-  Serial.println(scale.get_value());
-  //Serial.print("\t| average:\t");
-  //Serial.println(scale.get_units(10), 1);
+  Serial.println(scale.get_units());
 
   //scale.power_down();			        // put the ADC in sleep mode
   //delay(5);

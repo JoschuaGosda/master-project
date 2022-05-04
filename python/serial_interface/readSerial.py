@@ -14,7 +14,7 @@ Instructions how to use this:
 ports = serial.tools.list_ports.comports()
 serialInst = serial.Serial()
 
-myPort = '/dev/ttyACM1'
+myPort = '/dev/ttyACM0'
 myBaudRate = 38400
 portList = []
 
@@ -38,10 +38,11 @@ while not serialInst.in_waiting:
     
 #print("Mount the calibration weight to the load cell and then hit ENTER")
 print("message from arduino: " + serialInst.readline().decode('utf-8').rstrip('\n'))
+print("message from arduino: " + serialInst.readline().decode('utf-8').rstrip('\n'))
 input()
 serialInst.write(bytes('0', 'utf-8'))
 
-sleep(1)
+#sleep(1)
 time_prev = time()
 
 while True:
