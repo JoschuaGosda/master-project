@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 # read g-code data from txt-file
-with open('gcode.txt') as f:
+with open('preprocessing/gcode.txt') as f:
     lines = f.readlines()
     # create array to store path values of x1, y1, x2, y2
     pos = np.zeros((len(lines),4))
