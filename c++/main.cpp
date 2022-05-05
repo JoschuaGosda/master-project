@@ -19,8 +19,13 @@ int main(int, char**) {
 	// Is Values
 	Eigen::Matrix<double, 6, 1> actualPosition;
 	Eigen::Matrix<double, 7, 1> jointAngles;
-	jointAngles << 10, 50, 70, 10, 5, 10, 10;
-	//jointAngles << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+	// RIGHT ARM
+	//jointAngles << 10, 0, -70, -60, 0, 40, 135; //test with this setting shows up to 0.8 mm deviation
+	//jointAngles << 0, 0, 0, -60, 0, 0, 135; calibration with this setting
+	// LEFT ARM
+	//jointAngles << 10, 0, -70, -60, 0, 40, 45; //test with this setting shows up to 0.8 mm deviation
+	jointAngles << 0, 0, 0, -60, 0, 0, 45; //calibration with this setting
+	
 	jointAngles *= rl::math::DEG2RAD;
 	Eigen::Matrix<double, 7, 1> jointVelocity;
 	jointVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
@@ -33,7 +38,7 @@ int main(int, char**) {
 	desVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
 	std::pair<Eigen::Matrix<double, 7, 1>, Eigen::Matrix<double, 6, 1>> result;
-	result = gpm(desPosition, desVelocity, jointAngles, jointVelocity, weightingFactors, activationFactor, dt, YUMI_LEFT);
+	result = gpm(desPosition, desVelocity, jointAngles, jointVelocity, weightingFactors, activationFactor, dt, YUMI_RIGHT);
 	
 	std::cout << "desired joint values: \n" << result.first << std::endl;
 	std::cout << "current pose: \n" << result.second << std::endl;

@@ -47,8 +47,8 @@ Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1
 	// FORWARD KINEMATICS
 	rl::mdl::UrdfFactory factory;
 	
-	// Use the left arm as default
-	std::shared_ptr<rl::mdl::Model> model(factory.create("/home/joschua/Coding/forceControl/master-project/c++/src/urdf/yumi_left.urdf"));
+	// Use the left arm as default PROBLEM HERE!!!!!
+	std::shared_ptr<rl::mdl::Model> model(factory.create("/home/joschua/Coding/forceControl/master-project/c++/src/urdf/yumi_right.urdf"));
 	// overwrite model if right arm is choosen
 	if (arm == 1){
 		std::shared_ptr<rl::mdl::Model> model(factory.create("/home/joschua/Coding/forceControl/master-project/c++/src/urdf/yumi_right.urdf"));

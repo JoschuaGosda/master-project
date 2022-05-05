@@ -27,3 +27,10 @@ target_link_libraries(
     ${RL_LIBRARIES}
     eat::broccoli
 )
+
+add_executable(myMain main.cpp gpm.cpp)
+target_link_libraries(
+    myMain
+    eat::broccoli
+    ${RL_LIBRARIES}
+)
