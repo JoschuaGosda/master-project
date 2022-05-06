@@ -1,11 +1,16 @@
+import math
+import sys
+import os
+
 import numpy as np
 import copy
 import example
 
+# READ IN THE TRAJECTORY
 # define staring postition in workspace for left arm
-desp_start = np.array([0.35, 0.4, 0.2])
+desp_start = np.array([0.35, 0.25, 0.2])
 
-# TODO import the preprocessing data
+# import the preprocessing data
 data = np.load('/home/joschua/Coding/forceControl/master-project/python/taskspace_placement/traj_data.npy')
 # for each var x | y | z
 p1 = data[:, 0:3]
@@ -21,7 +26,7 @@ for m in [p1, v1, p2, v2, phi, dphi]:
     m[:, 2] = m[:, 1] # shift y to z
     m[:, 1] = -copy_col # copy z to y
 
-# TODO place the trajectories within the workspace of the robot
+# place the trajectories within the workspace of the robot
 # read the coordinates of p1 (that refers to the left arm) and modify it to match to desired 
 # starting postion
 p_start = p1[0, :]
@@ -40,17 +45,26 @@ weightingFactors = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
 activationFactor = 1.0
 dt = 0.05
 
-jointAngles = np.array([0.0, 0.0, 0.0, np.deg2rad(-60), 0.0, 0.0, np.deg2rad(45)])
-#jointAngles = jointAngles * np.deg2rad
-
+# START CONFIGURATION FOR THE RIGHT ARM
+# set the joint angles that map to the desired start position - read from RobotStudio
+#jointAngles = np.array([132.0, 40.05, -91.92, 24.75, 285.0, -27.74, -141.0]) * np.pi/180.0
+jointAngles = np.array([0.0, 0.0, 0.0, 60.0, 0.0, 0.0, 135.0]) * np.pi/180.0
+# initial jointVelocites are zero 
 jointVelocities = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
-desPosition =  np.array([0.66, -0.193, 0.629, np.deg2rad(97.9), np.deg2rad(-179.9), np.deg2rad(90.78)])
-desVelocities = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+# TODO: START CONFIGURATION FOR THE LEFT ARM
+
+phi_robo = np.array([80.0, 100.0, 180.0]) * np.pi/180.0 # values that FK computed, keep angle the same for now, just care about positions
+dphi_robo = np.array([0.0, 0.0, 0.0]) * np.pi/180.0
+# the current position should match px[0,:] and the desired next position is px[1,:]
+desPosition = np.concatenate((p1[1,:], phi_robo), axis=0)
+desVelocities = np.concatenate((v1[1,:], dphi_robo), axis=0)
 
 # TODO call the c++ egm function to get the neccessary joint values from pose in taskspace
+
 result = example.gpm(desPosition, desVelocities, jointAngles, jointVelocities, \
     weightingFactors, activationFactor, dt, 1)
+
 
 newJointAngles= result[0]
 lastPose = result[1]

@@ -71,14 +71,14 @@ Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1
 	// check if matrices are the same
 	//std::cout << "RLJacobian \n" << kinematic->getJacobian() << std::endl;
 	//std::cout << "myJacobian \n" << J << std::endl;
-	//std::cout << "Manipulability meassure \n" << kinematic->calculateManipulabilityMeasure() << std::endl;
+	std::cout << "Manipulability meassure \n" << kinematic->calculateManipulabilityMeasure() << std::endl;
 	
 	// extract orientation and position for the right arm
 	rl::math::Transform t = kinematic->getOperationalPosition(0);
 	rl::math::Vector3 position = t.translation();
 	rl::math::Vector3 orientation = t.rotation().eulerAngles(2, 1, 0).reverse();
-	//std::cout << "Joint configuration in degrees: " << jointAngles.transpose() * rl::math::RAD2DEG << std::endl;
-	//std::cout << "End-effector position: [m] " << position.transpose() << " orientation [deg] " << orientation.transpose() * rl::math::RAD2DEG << std::endl;
+	std::cout << "Joint configuration in degrees: " << jointAngles.transpose() * rl::math::RAD2DEG << std::endl;
+	std::cout << "FK end-effector position: [m] " << position.transpose() << " orientation [deg] " << orientation.transpose() * rl::math::RAD2DEG << std::endl;
 	
 
 	// INVERSE KINEMATICS
@@ -130,7 +130,7 @@ Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1
 
 	// add both gradients
 	nullSpaceGradient = manipGradient + cpgGradient;
-	//std::cout << "gradient \n" << nullSpaceGradient << std::endl;
+	std::cout << "gradient \n" << nullSpaceGradient << std::endl;
 
 	// do the inverse kinematics
 	ik.setWeighingMatrix(weightingFactors);
@@ -152,8 +152,8 @@ Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1
 	//std::cout << "test2 \n" << dq_r << std::endl;
 	desq *= dt;
 
-	//std::cout << "current qs in DEG \n" << jointAngles* rl::math::RAD2DEG << std::endl;
-	//std::cout << "next qs in DEG \n" << (jointAngles+desq)* rl::math::RAD2DEG << std::endl;
+	std::cout << "current qs in DEG \n" << jointAngles* rl::math::RAD2DEG << std::endl;
+	std::cout << "next qs in DEG \n" << (jointAngles+desq)* rl::math::RAD2DEG << std::endl;
 
 	// copy of code above to check for correctness
 	// forward kinematics for the right arm
@@ -163,8 +163,8 @@ Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1
 	rl::math::Transform dest = kinematic->getOperationalPosition(0);
 	rl::math::Vector3 dposition = dest.translation();
 	rl::math::Vector3 dorientation = dest.rotation().eulerAngles(2, 1, 0).reverse();
-	//std::cout << "Right Arm: Joint configuration in degrees: " << (jointAngles+desq).transpose() * rl::math::RAD2DEG << std::endl;
-	//std::cout << "Right Arm: End-effector position: [m] " << dposition.transpose() << " orientation [deg] " << dorientation.transpose() * rl::math::RAD2DEG << std::endl;
+	std::cout << "IK joint configuration in degrees: " << (jointAngles+desq).transpose() * rl::math::RAD2DEG << std::endl;
+	std::cout << "IK end-effector position: [m] " << dposition.transpose() << " orientation [deg] " << dorientation.transpose() * rl::math::RAD2DEG << std::endl;
 	
 	// return desired joint angles for the next step and current pose for computing the IK accuracy
 	//return desq;
