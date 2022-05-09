@@ -14,7 +14,7 @@
 
 std::pair<Eigen::Matrix<double, 7, 1>, Eigen::Matrix<double, 6, 1>> gpm(Eigen::Matrix<double, 6, 1> &desPosition, Eigen::Matrix<double, 6, 1> &desVelocity, 
 Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelocity,
-Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1.0, const double dt = 0.005, const int arm = 0) {
+Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1.0, const double dt = 0.0125, const int arm = 0) {
 /*
 	desPosition and desVelocity have to be modified
 */
@@ -168,5 +168,5 @@ Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1
 	
 	// return desired joint angles for the next step and current pose for computing the IK accuracy
 	//return desq;
-	return std::make_pair(desq, actualPosition);
+	return std::make_pair((jointAngles+desq), actualPosition);
 }
