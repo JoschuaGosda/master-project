@@ -32,7 +32,7 @@ pos1, pos2 = pos_split[0]*0.001, pos_split[1]*0.001 # transform to SI-units - [m
 # set a cutting speed, sample rate and compute necessary
 # position at every time step
 c_speed = 3000 * 0.001 * 1/60 # define cutting speed as 300 mm/min
-st = 0.005 # highest possible sample time - 250 Hz
+st = 1.0/80.0 # highest possible sample time - 250 Hz
 
 
 # initialize list with first element

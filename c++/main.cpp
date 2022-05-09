@@ -23,8 +23,10 @@ int main(int, char**) {
 	//jointAngles << 10, 0, -70, -60, 0, 40, 135; //test with this setting shows up to 0.8 mm deviation
 	//jointAngles << 0, 0, 0, -60, 0, 0, 135; calibration with this setting
 	// LEFT ARM
-	//jointAngles << 10, 0, -70, -60, 0, 40, 45; //test with this setting shows up to 0.8 mm deviation
-	jointAngles << 0, 0, 0, -60, 0, 0, 45; //calibration with this setting
+	//jointAngles << 60, -40, 50, 0, 140, 80, 45; //test1 - works
+	//jointAngles << 30, -70, 40, 25, -100, 90, 10; // test2 - works
+	//jointAngles << 0, 0, 0, -60, 0, 0, 45; //calibration with this setting
+	jointAngles << 90.48, 17.87, -25.09, 48, -137, 122, -74.21; // start position left arm, angles from RS
 	
 	jointAngles *= rl::math::DEG2RAD;
 	Eigen::Matrix<double, 7, 1> jointVelocity;
@@ -33,7 +35,7 @@ int main(int, char**) {
 	// Desired Values
 	Eigen::Matrix<double, 6, 1> desPosition;
 	//desPosition << 0, 0, 0, 0, 0, 0;
-	desPosition << 0.31, 0.27, 0.13, 0.522, 2.51, 2.94; // values slightly modified of current pose 
+	desPosition << 0.300, 0.200, 0.200, 90*rl::math::DEG2RAD, 180*rl::math::DEG2RAD, 90*rl::math::DEG2RAD; // values slightly modified of current pose 
 	Eigen::Matrix<double, 6, 1> desVelocity;
 	desVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
