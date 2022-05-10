@@ -9,8 +9,9 @@ int add(int i, int j) {
 }
 
 
-PYBIND11_MODULE(example, m) {
+PYBIND11_MODULE(invKin, m) {
     m.doc() = "pybind11 binding to C++ function that computes IK based on GPM"; // optional module docstring
-    m.def("gpm", &gpm, "A function that takes the current joint values and the desired task space values for the next step and returns the necessary joint angles, respectively", py::return_value_policy::copy);
+    m.def("gpm", &gpm, "A function to compute the invserse kinematics for a 7 DOF serial manipulator on vecocity level with comfort pose and manipulabilty gradient",
+    py::arg("desired pose"),py::arg("desired Velocities"), py::arg("joint angles"), py::arg("joint velocities"), py::arg("left arm -> 1, right arm -> 0"), py::return_value_policy::copy);
 	
 	}

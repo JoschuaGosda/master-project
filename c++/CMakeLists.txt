@@ -20,9 +20,9 @@ target_link_libraries (
 
 # dependencies for pybind11
 add_subdirectory(deps/pybind11) # include pybind11 as a submodule
-pybind11_add_module(example pybind11_example.cpp)
+pybind11_add_module(invKin pybind11_example.cpp)
 target_link_libraries(
-    example PUBLIC 
+    invKin PUBLIC 
     gpm
     ${RL_LIBRARIES}
     eat::broccoli

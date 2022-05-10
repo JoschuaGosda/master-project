@@ -31,7 +31,7 @@ pos1, pos2 = pos_split[0]*0.001, pos_split[1]*0.001 # transform to SI-units - [m
 # TODO: compute trajectory based on path of g-code
 # set a cutting speed, sample rate and compute necessary
 # position at every time step
-c_speed = 3000 * 0.001 * 1/60 # define cutting speed as 300 mm/min
+c_speed = 3000 * 0.001 * 1/60 # define cutting speed as 300 mm/min [m/s]
 st = 1.0/80.0 # highest possible sample time - 250 Hz
 
 

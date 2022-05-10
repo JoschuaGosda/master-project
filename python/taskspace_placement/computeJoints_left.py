@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 import numpy as np
 import copy
-import example
+import invKin
 
 # READ IN THE TRAJECTORY
 # define staring postition in workspace for left arm - found by try and error in RS
@@ -39,22 +39,17 @@ for i in range(len(p1[:,0])):
     p2[i,:] = p2[i,:] + offset
 
 
-
-
-# TODO create iteration loops for hyperparameter in inverse kinematics
-# parameters that can be tuned
-weightingFactors = np.array([10.0, 7.0, 4.0, 1.0, 1.0, 1.0, 1.0])
-activationFactor = 1.0
-dt = 1.0/80.0
-
 # START CONFIGURATION FOR THE LEFT ARM
 # set the joint angles that map to the desired start position - read from RobotStudio
-jointAngles = np.array([90.48, 17.87, -25.09, 48.0, -137.0, 122.0, -74.21]) * np.pi/180.0 #show good manipulability index in RS
+#jointAngles = np.array([90.48, 17.87, -25.09, 48.0, -137.0, 122.0, -74.21]) * np.pi/180.0 #show good manipulability index in RS
+jointAngles = np.array([90.48, 17.87, -25.09, 48.0, -137.0, 122.0, 15.79]) * np.pi/180.0
 # initial jointVelocites are zero 
 jointVelocities = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+dt = 0.0125
 
 
-phi_const = np.array([90.0, 180.0, 90.0]) * np.pi/180.0 # values that FK computed, keep angle the same for now, just care about positions
+phi_const = np.array([106.0, 90.0, 106.0]) * np.pi/180.0 # values that FK computed, keep angle the same for now, just care about positions
+#phi_const = np.array([106.0, 90.0, 106.0]) * np.pi/180.0 
 dphi_const = np.array([0.0, 0.0, 0.0]) * np.pi/180.0
 # the current position should match px[0,:] and the desired next position is px[1,:]
 desPose = np.concatenate((p1[1,:], phi_const), axis=0)
@@ -64,18 +59,19 @@ desVelocities = np.concatenate((v1[1,:], dphi_const), axis=0)
 desJointAngles = np.zeros((len(p1[:,0]),7))
 computedPose = np.zeros((len(p1[:,0]),6))
 
-for index, pos in enumerate(p1): # loop through all the desired position of left arm
+for index, (pos, vel) in enumerate(zip(p1, v1)): # loop through all the desired position of left arm
     print(pos)
     desPose = np.concatenate((pos, phi_const), axis=0)
-    # call the c++ egm function to get the neccessary joint values from pose in taskspace
-    result = example.gpm(desPose, desVelocities, jointAngles, jointVelocities, \
-    weightingFactors, activationFactor, dt, 1)
+    desVelocities = np.concatenate((vel, dphi_const), axis=0)
+    # call the c++ egm function, return joint values and resulting pose
+    result = invKin.gpm(desPose, desVelocities, jointAngles, jointVelocities, 1)
     desJointAngles[index,:] = result[0]
     computedPose[index, :] = result[1]
     if index > 0:
         jointVelocities = (desJointAngles[index, :] - desJointAngles[index-1, :])/dt # only true in the ideal case where result of ik matches the desired pose
-    print(result[0])
-    print(result[1])
+    print('IK joints:',  result[0])
+    print('IK resulting pose',  result[1])
+    print('\n error', desPose - result[1])
     jointAngles = result[0]
 
 # see development of joint values

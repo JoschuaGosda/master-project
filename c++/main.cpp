@@ -10,12 +10,6 @@ int main(int, char**) {
 
 	enum yumi_arm{YUMI_LEFT, YUMI_RIGHT};
 
-	// tuning parameters for IK
-	Eigen::Matrix<double, 7, 1> weightingFactors;
-	weightingFactors << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0; // no weighting
-	const double activationFactor = 1.0;
-	const double dt = 0.05;
-	
 	// Is Values
 	Eigen::Matrix<double, 6, 1> actualPosition;
 	Eigen::Matrix<double, 7, 1> jointAngles;
@@ -27,7 +21,9 @@ int main(int, char**) {
 	//jointAngles << 30, -70, 40, 25, -100, 90, 10; // test2 - works
 	//jointAngles << 0, 0, 0, -60, 0, 0, 45; //calibration with this setting
 	jointAngles << 90.48, 17.87, -25.09, 48, -137, 122, -74.21; // start position left arm, angles from RS
-	
+	jointAngles << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+
+
 	jointAngles *= rl::math::DEG2RAD;
 	Eigen::Matrix<double, 7, 1> jointVelocity;
 	jointVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
@@ -40,7 +36,7 @@ int main(int, char**) {
 	desVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
 	std::pair<Eigen::Matrix<double, 7, 1>, Eigen::Matrix<double, 6, 1>> result;
-	result = gpm(desPosition, desVelocity, jointAngles, jointVelocity, weightingFactors, activationFactor, dt, YUMI_RIGHT);
+	result = gpm(desPosition, desVelocity, jointAngles, jointVelocity, YUMI_RIGHT);
 	
 	std::cout << "desired joint values: \n" << result.first << std::endl;
 	std::cout << "current pose: \n" << result.second << std::endl;

@@ -12,11 +12,10 @@
 #include <rl/mdl/UrdfFactory.h>
 
 
-std::pair<Eigen::Matrix<double, 7, 1>, Eigen::Matrix<double, 6, 1>> gpm(Eigen::Matrix<double, 6, 1> &desPosition, Eigen::Matrix<double, 6, 1> &desVelocity, 
-Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelocity,
-Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1.0, const double dt = 0.0125, const int arm = 0) {
+std::pair<Eigen::Matrix<double, 7, 1>, Eigen::Matrix<double, 6, 1>> gpm(Eigen::Matrix<double, 6, 1> &desPose, Eigen::Matrix<double, 6, 1> &desVelocity, 
+Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelocity, const int arm = 0) {
 /*
-	desPosition and desVelocity have to be modified
+	desPose and desVelocity have to be modified
 */
 	// VARIABLES INITIALIZATION
 	Eigen::Matrix<double, 6, 7> J;
@@ -25,6 +24,9 @@ Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1
 	Eigen::Matrix<double, 7, 1> nullSpaceGradient = Eigen::Matrix<double, 7, 1>::Zero();
 	Eigen::Matrix<double, 7, 1> manipGradient = Eigen::Matrix<double, 7, 1>::Zero();
 	Eigen::Matrix<double, 6, 1> actualPosition;
+	Eigen::Matrix<double, 6, 1> dPosition;
+	Eigen::Matrix<double, 6, 1> resPose;
+	const double dt = 0.0125; // refers to 80 Hz
 
 	// create ASC object and execute its functions for inverse kinematics
 	broccoli::control::AutomaticSupervisoryControl<6,7> ik;
@@ -69,8 +71,8 @@ Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1
 	}
 
 	// check if matrices are the same
-	//std::cout << "RLJacobian \n" << kinematic->getJacobian() << std::endl;
-	//std::cout << "myJacobian \n" << J << std::endl;
+	std::cout << "RLJacobian \n" << kinematic->getJacobian() << std::endl;
+	std::cout << "myJacobian \n" << J << std::endl;
 	std::cout << "Manipulability meassure \n" << kinematic->calculateManipulabilityMeasure() << std::endl;
 	
 	// extract orientation and position for the right arm
@@ -85,18 +87,23 @@ Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1
 	// obtained from forward kinematics, later the current configuration read from egm interface
 	actualPosition << position.transpose()(0), position.transpose()(1), position.transpose()(2), orientation.transpose()(0), orientation.transpose()(1), orientation.transpose()(2);
 	// add 1 mm to the position part
-	//dPosition << 0.01, 0.01, 0.01, 0.0, 0.0, 0.0;
-	//desPosition = actualPosition + dPosition;
-	//std::cout << "desPosition \n" << desPosition << std::endl;
-	// apply vel that results from actualPosition and desPosition
+	dPosition << 0.0, 0.01, 0.0, 0.0, 0.0, 0.0;
+	//desPose = actualPosition + dPosition;
+	//std::cout << "desPose \n" << desPose << std::endl;
+	// apply vel that results from actualPosition and desPose
 	//desVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 	// TODO: this needs to be changed soon!
 	//desVelocity << dPosition * 1/dt; 
+	std::cout << "desPose \n" << desPose << std::endl;
+	std::cout << "desVelocity \n" << desVelocity << std::endl;
 	
 	// compute CPG gradient
 	cpg.useRangeBasedScaling(q_min, q_max);
+	//cpg.setWeight() by default it is 1
 	cpgGradient = cpg.process(jointAngles, jointVelocity);	// if gradient is zero then the ASC is just a resolved motion ik method
+	//cpg.setPose(jointAngles);
 	
+
 	// compute Jacobian derivative - code snippet from Jonas Wittmann
 	std::array<Eigen::Matrix<double, 6, 7>, 7> dJ; // NOLINT
     for (auto& matrix : dJ) {
@@ -129,16 +136,16 @@ Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1
     }
 
 	// add both gradients
-	nullSpaceGradient = manipGradient + cpgGradient;
+	nullSpaceGradient = 0*manipGradient + 0*cpgGradient;
 	std::cout << "gradient \n" << nullSpaceGradient << std::endl;
 
 	// do the inverse kinematics
-	ik.setWeighingMatrix(weightingFactors);
-	ik.setTaskSpaceConstraintFactor(activationFactor);
+	//ik.setWeighingMatrix(weightingFactors); // by default the identity matrix
+	//ik.setTaskSpaceConstraintFactor(activationFactor); // is set to 1 by default
 	// set feedback gain for effective desired velocity
-	ik.setDriftCompensationGain(1.0);
+	ik.setDriftCompensationGain(0.0); // set to 1 by default, 0.5 is still too high
 	// set the target position and velocity
-	ik.setTarget(desPosition, desVelocity); // needs to be specified in order to give reasonable results for ik.outoutVelocity
+	ik.setTarget(desPose, desVelocity); // needs to be specified in order to give reasonable results for ik.outoutVelocity
 
 	// compute the desired velocities in taskspace
 	ik.process(J, actualPosition, nullSpaceGradient, dt);
@@ -149,10 +156,12 @@ Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1
 	
 	// perform integration over one timestep to obtain positions that can be send to robot
 	desq << ik.outputVelocity().value();
+	std::cout << "output velocty in deg/s \n" << desq* rl::math::RAD2DEG << std::endl;
 	//std::cout << "test2 \n" << dq_r << std::endl;
 	desq *= dt;
 
 	std::cout << "current qs in DEG \n" << jointAngles* rl::math::RAD2DEG << std::endl;
+	std::cout << "delta qs in DEG \n" << desq * rl::math::RAD2DEG << std::endl;
 	std::cout << "next qs in DEG \n" << (jointAngles+desq)* rl::math::RAD2DEG << std::endl;
 
 	// copy of code above to check for correctness
@@ -166,7 +175,9 @@ Eigen::Matrix<double, 7, 1> &weightingFactors, const double activationFactor = 1
 	std::cout << "IK joint configuration in degrees: " << (jointAngles+desq).transpose() * rl::math::RAD2DEG << std::endl;
 	std::cout << "IK end-effector position: [m] " << dposition.transpose() << " orientation [deg] " << dorientation.transpose() * rl::math::RAD2DEG << std::endl;
 	
+	resPose << dposition.transpose()(0), dposition.transpose()(1), dposition.transpose()(2), dorientation.transpose()(0), dorientation.transpose()(1), dorientation.transpose()(2);
+
 	// return desired joint angles for the next step and current pose for computing the IK accuracy
 	//return desq;
-	return std::make_pair((jointAngles+desq), actualPosition);
+	return std::make_pair((jointAngles+desq), resPose);
 }
