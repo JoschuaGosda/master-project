@@ -130,21 +130,21 @@ for i in range(pNum):
     # to  upper, right, front corner. Calculate length of wire and angles using basic geometrics. 
     hyp1 = sqrt(dx**2 + wLen**2) # calculate first hypothenuse
     hyp2 = sqrt(dy**2 + hyp1**2) 
-    ang[i, 2] = np.arctan(dx/wLen) # rotation around y-axis from oringal frame
-    ang[i, 1] = np.arctan(dy/hyp1) # rotation around x-axis in already rotated frame
+    ang[i, 1] = np.arctan(dx/wLen) # rotation around y-axis from oringal frame
+    ang[i, 0] = np.arctan(dy/hyp1) # rotation around x-axis in already rotated frame
     effLen[i, 0] = hyp2 # effective length
     dLen = hyp2 - wLen 
     
     # compute rotation matrices
     # rotation in negative direction
     Rx = np.array([[1, 0, 0], 
-              [0, cos(ang[i,1]), sin(ang[i,1])],
-              [0, -sin(ang[i,1]), cos(ang[i,1])]])
+              [0, cos(ang[i,0]), sin(ang[i,0])],
+              [0, -sin(ang[i,0]), cos(ang[i,0])]])
 
     # rotation in postive direction
-    Ry = np.array([[cos(ang[i,2]), 0, sin(ang[i,2])], 
+    Ry = np.array([[cos(ang[i,1]), 0, sin(ang[i,1])], 
               [0, 1, 0],
-              [-sin(ang[i,2]), 0, cos(ang[i,2])]])
+              [-sin(ang[i,1]), 0, cos(ang[i,1])]])
 
     # rotation matrix
     # self defined convention: rotate around y axis, then around x axis the get from  initial frame to wire frame

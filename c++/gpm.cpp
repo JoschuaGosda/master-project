@@ -143,7 +143,7 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	//ik.setWeighingMatrix(weightingFactors); // by default the identity matrix
 	//ik.setTaskSpaceConstraintFactor(activationFactor); // is set to 1 by default
 	// set feedback gain for effective desired velocity
-	ik.setDriftCompensationGain(0.0); // set to 1 by default, 0.5 is still too high
+	ik.setDriftCompensationGain(0.005); // set to 1 by default, 0.5 is still too high, 0.01 works
 	// set the target position and velocity
 	ik.setTarget(desPose, desVelocity); // needs to be specified in order to give reasonable results for ik.outoutVelocity
 
