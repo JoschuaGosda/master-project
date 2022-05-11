@@ -41,29 +41,25 @@ for i in range(len(p1[:,0])):
 
 # START CONFIGURATION FOR THE LEFT ARM
 # set the joint angles that map to the desired start position - read from RobotStudio
-jointAngles = np.array([90.48, 17.87, -25.09, 48.0, -137.0, 122.0, -74.21]) * np.pi/180.0 #show good manipulability index in RS
 #jointAngles = np.array([90.48, 17.87, -25.09, 48.0, -137.0, 122.0, -74.21]) * np.pi/180.0 #show good manipulability index in RS
-#jointAngles = np.array([90.48, 17.87, -25.09, 48.0, -137.0, 122.0, 15.79]) * np.pi/180.0
+#jointAngles = np.array([90.48, 17.87, -25.09, 48.0, -137.0, 122.0, -74.21]) * np.pi/180.0 #show good manipulability index in RS
+jointAngles = np.array([90.48, 17.87, -25.09, 48.0, -137.0, 122.0, 15.79]) * np.pi/180.0
 # initial jointVelocites are zero 
 jointVelocities = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 dt = 0.0125
 
 
-phi_const = np.array([90.0, 180.0, 90.0]) * np.pi/180.0 # values that FK computed, keep angle the same for now, just care about positions
-#phi_const = np.array([106.0, 90.0, 106.0]) * np.pi/180.0 
+#phi_const = np.array([90.0, 180.0, 90.0]) * np.pi/180.0 # values that FK computed, keep angle the same for now, just care about positions
+phi_const = np.array([106.0, 90.0, 106.0]) * np.pi/180.0 
 dphi_const = np.array([0.0, 0.0, 0.0]) * np.pi/180.0
-# the current position should match px[0,:] and the desired next position is px[1,:]
-desPose = np.concatenate((p1[1,:], phi_const), axis=0)
-desVelocities = np.concatenate((v1[1,:], dphi_const), axis=0)
-#desVelocities = np.concatenate((np.array([0, 0, 0]), dphi_const), axis=0)
 
-phi_base = np.zeros((len(p1[:,0]),3)) + (np.array([90.0, 180.0, 90.0])* np.pi/180.0)
+phi_base = np.zeros((len(p1[:,0]),3)) + phi_const
 phi_total = phi_base + phi_delta
 desJointAngles = np.zeros((len(p1[:,0]),7))
 computedPose = np.zeros((len(p1[:,0]),6))
 error = np.zeros((len(p1[:,0]),6))
 
-for index, (pos, vel) in enumerate(zip(p1, v1)): # loop through all the desired position of left arm
+for index, (pos, vel, phi, phi_dot) in enumerate(zip(p1, v1, phi_total, dphi)): # loop through all the desired position of left arm
     desPose = np.concatenate((pos, phi_const), axis=0)
     desVelocities = np.concatenate((vel, dphi_const), axis=0)
     # call the c++ egm function, return joint values and resulting pose
@@ -76,6 +72,7 @@ for index, (pos, vel) in enumerate(zip(p1, v1)): # loop through all the desired 
     print('IK resulting pose',  result[1])
     print('\n error', desPose - result[1])
     error[index, :] = desPose - result[1]
+    #error[index, 3:6] = np.array([0, 0, 0])
     jointAngles = result[0]
 
 # see development of joint values

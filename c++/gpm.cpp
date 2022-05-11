@@ -23,7 +23,7 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	// instantiate vars vor Automatic Supervisory Control (ASC)
 	Eigen::Matrix<double, 7, 1> nullSpaceGradient = Eigen::Matrix<double, 7, 1>::Zero();
 	Eigen::Matrix<double, 7, 1> manipGradient = Eigen::Matrix<double, 7, 1>::Zero();
-	Eigen::Matrix<double, 6, 1> actualPosition;
+	Eigen::Matrix<double, 6, 1> actualPose;
 	Eigen::Matrix<double, 6, 1> dPosition;
 	Eigen::Matrix<double, 6, 1> resPose;
 	const double dt = 0.0125; // refers to 80 Hz
@@ -85,12 +85,14 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 
 	// INVERSE KINEMATICS
 	// obtained from forward kinematics, later the current configuration read from egm interface
-	actualPosition << position.transpose()(0), position.transpose()(1), position.transpose()(2), orientation.transpose()(0), orientation.transpose()(1), orientation.transpose()(2);
+
+	//actualPose << position.transpose()(0), position.transpose()(1), position.transpose()(2), orientation.transpose()(0), orientation.transpose()(1), orientation.transpose()(2);
+	actualPose << position.transpose()(0), position.transpose()(1), position.transpose()(2), 106.0*rl::math::DEG2RAD, 90.0*rl::math::DEG2RAD, 106.0*rl::math::DEG2RAD;
 	// add 1 mm to the position part
 	dPosition << 0.0, 0.01, 0.0, 0.0, 0.0, 0.0;
-	//desPose = actualPosition + dPosition;
+	//desPose = actualPose + dPosition;
 	//std::cout << "desPose \n" << desPose << std::endl;
-	// apply vel that results from actualPosition and desPose
+	// apply vel that results from actualPose and desPose
 	//desVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 	// TODO: this needs to be changed soon!
 	//desVelocity << dPosition * 1/dt; 
@@ -143,12 +145,12 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	//ik.setWeighingMatrix(weightingFactors); // by default the identity matrix
 	//ik.setTaskSpaceConstraintFactor(activationFactor); // is set to 1 by default
 	// set feedback gain for effective desired velocity
-	ik.setDriftCompensationGain(0.005); // set to 1 by default, 0.5 is still too high, 0.01 works
+	ik.setDriftCompensationGain(0.5); // set to 1 by default, 0.5 is still too high, 0.01 works
 	// set the target position and velocity
 	ik.setTarget(desPose, desVelocity); // needs to be specified in order to give reasonable results for ik.outoutVelocity
 
 	// compute the desired velocities in taskspace
-	ik.process(J, actualPosition, nullSpaceGradient, dt);
+	ik.process(J, actualPose, nullSpaceGradient, dt);
 
 	// obtain the computed velocity in task space
 	//std::cout << "output ik \n" << ik.outputVelocity() << std::endl;
