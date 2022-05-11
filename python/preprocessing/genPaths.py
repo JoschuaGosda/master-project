@@ -109,7 +109,7 @@ plt.show()
 # number of points in paths
 pNum = len(p1[:,0])
 # length of wire, defined in 4-axis setup 
-wLen = 0.8 
+wLen = 0.4 
 z1 = np.zeros((pNum,1))
 z2 = np.ones((pNum,1)) * wLen
 # append z axis to position vectors

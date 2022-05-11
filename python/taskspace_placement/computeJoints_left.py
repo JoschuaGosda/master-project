@@ -41,16 +41,17 @@ for i in range(len(p1[:,0])):
 
 # START CONFIGURATION FOR THE LEFT ARM
 # set the joint angles that map to the desired start position - read from RobotStudio
+jointAngles = np.array([90.48, 17.87, -25.09, 48.0, -137.0, 122.0, -74.21]) * np.pi/180.0 #show good manipulability index in RS
 #jointAngles = np.array([90.48, 17.87, -25.09, 48.0, -137.0, 122.0, -74.21]) * np.pi/180.0 #show good manipulability index in RS
-#jointAngles = np.array([90.48, 17.87, -25.09, 48.0, -137.0, 122.0, -74.21]) * np.pi/180.0 #show good manipulability index in RS
-jointAngles = np.array([90.48, 17.87, -25.09, 48.0, -137.0, 122.0, 15.79]) * np.pi/180.0
+#jointAngles = np.array([90.48, 17.87, -25.09, 48.0, -137.0, 122.0, 15.79]) * np.pi/180.0
 # initial jointVelocites are zero 
 jointVelocities = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 dt = 0.0125
 
 
-#phi_const = np.array([90.0, 180.0, 90.0]) * np.pi/180.0 # values that FK computed, keep angle the same for now, just care about positions
-phi_const = np.array([106.0, 90.0, 106.0]) * np.pi/180.0 
+phi_const = np.array([90.0, 180.0, 90.0]) * np.pi/180.0 # values that FK computed, keep angle the same for now, just care about positions
+#phi_const = np.array([106.0, 90.0, 106.0]) * np.pi/180.0 
+#phi_const = np.array([100.0, 90.0, 120.0]) * np.pi/180.0 
 dphi_const = np.array([0.0, 0.0, 0.0]) * np.pi/180.0
 
 phi_base = np.zeros((len(p1[:,0]),3)) + phi_const
@@ -68,8 +69,8 @@ for index, (pos, vel, phi, phi_dot) in enumerate(zip(p1, v1, phi_total, dphi)): 
     computedPose[index, :] = result[1]
     if index > 0:
         jointVelocities = (desJointAngles[index, :] - desJointAngles[index-1, :])/dt # only true in the ideal case where result of ik matches the desired pose
-    print('IK joints:',  result[0])
-    print('IK resulting pose',  result[1])
+    #print('IK joints:',  result[0])
+    #print('IK resulting pose',  result[1])
     print('\n error', desPose - result[1])
     error[index, :] = desPose - result[1]
     #error[index, 3:6] = np.array([0, 0, 0])
