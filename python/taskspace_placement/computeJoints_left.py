@@ -54,26 +54,28 @@ phi_const = np.array([90.0, 180.0, 90.0]) * np.pi/180.0 # values that FK compute
 #phi_const = np.array([100.0, 90.0, 120.0]) * np.pi/180.0 
 dphi_const = np.array([0.0, 0.0, 0.0]) * np.pi/180.0
 
+# build the final angles for the orientation of end effector - don't use it for now
 phi_base = np.zeros((len(p1[:,0]),3)) + phi_const
 phi_total = phi_base + phi_delta
+
+# create arrays to store values of loop
 desJointAngles = np.zeros((len(p1[:,0]),7))
 computedPose = np.zeros((len(p1[:,0]),6))
 error = np.zeros((len(p1[:,0]),6))
 
 for index, (pos, vel, phi, phi_dot) in enumerate(zip(p1, v1, phi_total, dphi)): # loop through all the desired position of left arm
-    desPose = np.concatenate((pos, phi_const), axis=0)
-    desVelocities = np.concatenate((vel, dphi_const), axis=0)
+    desPose = np.concatenate((pos, phi_const), axis=0) # note that phi_const is used -> same orientation throughout the movement
+    desVelocities = np.concatenate((vel, dphi_const), axis=0) # same here
     # call the c++ egm function, return joint values and resulting pose
     result = invKin.gpm(desPose, desVelocities, jointAngles, jointVelocities, 1)
-    desJointAngles[index,:] = result[0]
-    computedPose[index, :] = result[1]
+    desJointAngles[index,:] = result[0] # computed joint values from IK
+    computedPose[index, :] = result[1] # resulting pose with joint values from IK
     if index > 0:
         jointVelocities = (desJointAngles[index, :] - desJointAngles[index-1, :])/dt # only true in the ideal case where result of ik matches the desired pose
     #print('IK joints:',  result[0])
     #print('IK resulting pose',  result[1])
     print('\n error', desPose - result[1])
     error[index, :] = desPose - result[1]
-    #error[index, 3:6] = np.array([0, 0, 0])
     jointAngles = result[0]
 
 # see development of joint values

@@ -28,7 +28,6 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	Eigen::Matrix<double, 6, 1> dPosition;
 	Eigen::Matrix<double, 6, 1> resPose;
 	const double dt = 0.0125; // refers to 80 Hz
-	double rx, ry, rz;
 
 	// create ASC object and execute its functions for inverse kinematics
 	broccoli::control::AutomaticSupervisoryControl<6,7> ik;
@@ -84,57 +83,14 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	std::cout << "Joint configuration in degrees: " << jointAngles.transpose() * rl::math::RAD2DEG << std::endl;
 	std::cout << "FK end-effector position: [m] " << position.transpose() << " orientation [deg] " << orientation.transpose() * rl::math::RAD2DEG << std::endl;
 	
-	std::cout << "CHECK ORIENTATION BEFORE " << orientation.x() * rl::math::RAD2DEG << " " << orientation.y() * rl::math::RAD2DEG << " " << orientation.z() * rl::math::RAD2DEG << std::endl;
-	
-	std::cout << " desPose1 " << desPose[0,0] << " desPose2 " << desPose[0,1] << " desPose3 " << desPose[0,2] 
-	<< " desPose4 " << desPose[0,3] << " desPose5 " << desPose[0,4] << " desPose6 " << desPose[0,5] << std::endl;
-
-	// According to RL angles are in range [0:pi]x[-pi:pi]x[-pi:pi]
-	// jumping angles are an issue as the resulting computed error in ik.process() is not the real error
-	// therefore modify the angles such that the resulting error between desPose and actualPose corresponds to the real error
-	rx = orientation.x();
-	ry = orientation.y();
-	rz = orientation.z();
-
-	double bound_low = -M_PI * 17.0/18.0; // equals -170 deg in rad
-	double bound_low_x = M_PI * 1.0/18.0; // equals 10 deg in rad
-	double bound_high = M_PI * 17.0/18.0; // equals 170 deg in rad
-
-	if ((rz < bound_low) && (desPose[0, 5] > bound_high)){
-		rz = M_PI - (-M_PI - rz); // rz is negative and will be added to the positive range, ending at pi
-	} else if ((rz > bound_high) && (desPose[0, 5] < bound_low)){
-		rz = -M_PI - (M_PI - rz); // rz is positive and will be a the negative
-	}
-
-	if ((ry < bound_low) && (desPose[0, 4] > bound_high)){
-		ry = M_PI - (-M_PI - ry); 
-	} else if ((ry > bound_high) && (desPose[0, 4] < bound_low)){
-		ry = -M_PI - (M_PI - ry); 
-	}
-
-	if ((rx < bound_low_x) && (desPose[0, 3] > bound_high)){ // M_PI/4.0 is 45 deg
-		rx = M_PI + rx; 
-	} else if ((rx > bound_high) && (desPose[0, 3] < bound_low_x)){
-		rx = - (M_PI - rx); 
-	}
-
-	std::cout << "CHECK ORIENTATION AFTER " << rx * rl::math::RAD2DEG << " " << ry * rl::math::RAD2DEG << " " << rz * rl::math::RAD2DEG << std::endl;
-
 	// INVERSE KINEMATICS
 	// obtained from forward kinematics, later the current configuration read from egm interface
 
 	//actualPose << position.transpose()(0), position.transpose()(1), position.transpose()(2), orientation.transpose()(0), orientation.transpose()(1), orientation.transpose()(2);
-	actualPose << 0.3, 0.2, 0.2, rx, ry, rz;
-	// add 1 mm to the position part
-	dPosition << 0.0, 0.01, 0.0, 0.0, 0.0, 0.0;
-	//desPose = actualPose + dPosition;
-	//std::cout << "desPose \n" << desPose << std::endl;
+	// manually set the orientation
+	actualPose << position.x(), position.y(), position.z(), 90.0 * rl::math::DEG2RAD, 180.0 * rl::math::DEG2RAD, 90.0 * rl::math::DEG2RAD;
 	// apply vel that results from actualPose and desPose
 	desVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-	// TODO: this needs to be changed soon!
-	//desVelocity << dPosition * 1/dt; 
-	//std::cout << "desPose \n" << desPose << std::endl;
-	//std::cout << "desVelocity \n" << desVelocity << std::endl;
 	
 	// compute CPG gradient
 	cpg.useRangeBasedScaling(q_min, q_max);
@@ -188,23 +144,17 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 
 	// compute the desired velocities in taskspace
 	ik.process(J, actualPose, nullSpaceGradient, dt);
-
-	// obtain the computed velocity in task space
-	//std::cout << "output ik \n" << ik.outputVelocity() << std::endl;
-	//std::cout << "test \n" << ik.outputVelocity().value() << std::endl;
 	
 	// perform integration over one timestep to obtain positions that can be send to robot
 	desq << ik.outputVelocity().value();
-	//std::cout << "output velocty in deg/s \n" << desq* rl::math::RAD2DEG << std::endl;
-	//std::cout << "test2 \n" << dq_r << std::endl;
+	// integrate value over one time step
 	desq *= dt;
 
 	//std::cout << "current qs in DEG \n" << jointAngles* rl::math::RAD2DEG << std::endl;
 	std::cout << "delta qs in DEG \n" << desq * rl::math::RAD2DEG << std::endl;
 	//std::cout << "next qs in DEG \n" << (jointAngles+desq)* rl::math::RAD2DEG << std::endl;
 
-	// copy of code above to check for correctness
-	// forward kinematics for the right arm
+	// forward kinematics with the new joints values from IK
 	kinematic->setPosition(jointAngles+desq);
 	kinematic->forwardPosition();
 
@@ -216,7 +166,6 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	
 	resPose << dposition.transpose()(0), dposition.transpose()(1), dposition.transpose()(2), dorientation.transpose()(0), dorientation.transpose()(1), dorientation.transpose()(2);
 
-	// return desired joint angles for the next step and current pose for computing the IK accuracy
-	//return desq;
+	// return desired joint angles for the next step and pose for computing the IK accuracy
 	return std::make_pair((jointAngles+desq), resPose);
 }
