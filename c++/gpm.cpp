@@ -24,27 +24,15 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	// VARIABLES INITIALIZATION
 	Eigen::Matrix<double, 6, 7> J;
 
-	// instantiate vars vor Automatic Supervisory Control (ASC)
-	Eigen::Matrix<double, 7, 1> nullSpaceGradient = Eigen::Matrix<double, 7, 1>::Zero();
-	Eigen::Matrix<double, 7, 1> manipGradient = Eigen::Matrix<double, 7, 1>::Zero();
-	Eigen::Matrix<double, 3, 1> currentTranslation;
+	
+	
 	Eigen::Matrix<double, 6, 1> resPose;
 	const double dt = 0.0125; // refers to 80 Hz
 	
-	// define min and max values for the joints of Yumi
-	Eigen::Matrix< double, 7, 1> q_min;
-	Eigen::Matrix< double, 7, 1> q_max;
-	q_min << -168.5, -143.5, -168.5, -123.5, -290, -88, -229;
-	q_min *= rl::math::DEG2RAD;
-	q_max << 168.5, 43.5, 168.5, 80, 290, 138, 229;
-	q_max *= rl::math::DEG2RAD;
-	// instantiate vars for Comfort Pose Gradient (CPG)
-	Eigen::Matrix<double, 7, 1> cpgGradient = Eigen::Matrix<double, 7, 1>::Zero();
-	// create CompfortPoseGradient object
-	broccoli::control::ComfortPoseGradient<7> cpg;
+	
 	
 	// desired joint values after doing the inverse kinematics
-	Eigen::Matrix<double, 7, 1> desq;
+	Eigen::Matrix<double, 7, 1> jointAnglesDelta;
 
 	
 	// FORWARD KINEMATICS
@@ -88,26 +76,62 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 					*Eigen::AngleAxisd(desPose(4), Eigen::Vector3d::UnitY())
 					*Eigen::AngleAxisd(desPose(3), Eigen::Vector3d::UnitX());
 					
-	std::cout << "desPose" << desPose << std::endl;
-	//std::cout << "desPose3    " << desPose(4) << std::endl;
-	std::cout << "desOrientation" << desOrientation << std::endl;
+	//std::cout << "reverse euler angles" << desOrientation.eulerAngles(2, 1, 0).reverse();
 
-	std::cout << "reverse euler angles" << desOrientation.eulerAngles(2, 1, 0).reverse();
-	//std::cout << "RL Orientation" << t.rotation();
+	// TODO: check in non singularity of these two rotation matrices match!
+	std::cout << "desOrientation \n" << desOrientation << std::endl;
+	std::cout << "RL Orientation \n" << t.rotation() << std::endl;
+
+	Eigen::Vector3d einheitsvektor;
+	einheitsvektor << 1.0, 0.0, 0.0;
+	std::cout << "desOrientation x einheitsvektor \n" << desOrientation* einheitsvektor << std::endl;
+	std::cout << "RL Orientation x einheitsvektor\n" << t.rotation()*einheitsvektor << std::endl;
+
+
 	// define Quaternion with coefficients in the order [x, y, z, w] 
+	Eigen::Vector3d desiredTranslation = desPose.head(3);
+	std::cout << "desiredTranslation" << desiredTranslation << std::endl;
 	Eigen::Quaterniond desiredOrientation(desOrientation);
 
 	//currentTranslation << position.transpose()(0), position.transpose()(1), position.transpose()(2), orientation.transpose()(0), orientation.transpose()(1), orientation.transpose()(2);
 	// set the current positions
+	Eigen::Matrix<double, 3, 1> currentTranslation;
 	currentTranslation << position.x(), position.y(), position.z();
 	Eigen::Quaterniond currentOrientation(t.rotation());
 	
+	// chose the correct quaternion such that the distance between desired and current
+	// quaternion is the shortest
+	if (desiredOrientation.dot(currentOrientation) < 0.0) {
+		currentOrientation.coeffs() *= -1.0;
+	}
+	// calculate delta between quaternions
+	Eigen::Quaterniond errorQuaternion = currentOrientation.inverse() * desiredOrientation;
+	Eigen::Vector3d errorRotationInWorldFrame = currentOrientation * errorQuaternion.vec();
+
+	double gainDriftCompensation = 0.1;
+    Eigen::Matrix<double, 6, 1> effectiveTaskSpaceInput = Eigen::Matrix<double, 6, 1>::Zero();
+	effectiveTaskSpaceInput.head(3) = gainDriftCompensation/dt * (desiredTranslation - currentTranslation)
+										+ desVelocity.head(3);
+	effectiveTaskSpaceInput.tail(3) = gainDriftCompensation/dt * errorRotationInWorldFrame + desVelocity.tail(3);
+
 	// COMPUTE GRADIENTS
+	// define min and max values for the joints of Yumi
+	Eigen::Matrix< double, 7, 1> q_min;
+	Eigen::Matrix< double, 7, 1> q_max;
+	q_min << -168.5, -143.5, -168.5, -123.5, -290, -88, -229;
+	q_min *= rl::math::DEG2RAD;
+	q_max << 168.5, 43.5, 168.5, 80, 290, 138, 229;
+	q_max *= rl::math::DEG2RAD;
+	// create CompfortPoseGradient object
+	broccoli::control::ComfortPoseGradient<7> cpg;
 	// compute CPG gradient
 	cpg.useRangeBasedScaling(q_min, q_max);
 	//cpg.setWeight() by default it is 1
+
+	Eigen::Matrix<double, 7, 1> cpgGradient = Eigen::Matrix<double, 7, 1>::Zero();
 	cpgGradient = cpg.process(jointAngles, jointVelocity);	// if gradient is zero then the ASC is just a resolved motion ik method
 	//cpg.setPose(jointAngles);
+
 	// compute Jacobian derivative - code snippet from Jonas Wittmann
 	std::array<Eigen::Matrix<double, 6, 7>, 7> dJ; // NOLINT
     for (auto& matrix : dJ) {
@@ -131,52 +155,47 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	// Compute the derivative of the Jacobian w.r.t. the joint angles.
     //Eigen::Matrix<double, 6, 7>, 7> ddJ_r = jacobianDerivative(J);
     // Current cost.
+
+	Eigen::Matrix<double, 7, 1> manipGradient = Eigen::Matrix<double, 7, 1>::Zero();
     double cost = sqrt((J * J.transpose()).determinant());
     // Compute the manipulability gradient.
     for (int jj = 0; jj < 7; ++jj) {
         manipGradient[jj] = cost * ((J * J.transpose()).inverse() * dJ.at(jj) * J.transpose()).trace();
     }
 	// add both gradients
+	Eigen::Matrix<double, 7, 1> nullSpaceGradient = Eigen::Matrix<double, 7, 1>::Zero();
 	nullSpaceGradient = 0*manipGradient + 0*cpgGradient;
 	//std::cout << "gradient \n" << nullSpaceGradient << std::endl;
 
 
-
-	// do the inverse kinematics
-	//ik.setWeighingMatrix(weightingFactors); // by default the identity matrix
-	//ik.setTaskSpaceConstraintFactor(activationFactor); // is set to 1 by default
-	// set feedback gain for effective desired velocity
-	//ik.setDriftCompensationGain(0.5); // set to 1 by default, 0.5 is still too high, 0.01 works
-	// set the target position and velocity
-	//ik.setTarget(desPose, desVelocity); // needs to be specified in order to give reasonable results for ik.outoutVelocity
-	// compute the desired velocities in taskspace
-	//ik.process(J, currentTranslation, nullSpaceGradient, dt);
-
 	// ASC desired effective velocity does not work -> implement myself
-	//broccoli::core::math::solvePseudoInverseEquation(taskSpaceJacobian, m_inverseWeighing, effectiveDesiredVelocity, nullSpaceVelocity, m_activationFactorTaskSpace);
+	Eigen::Matrix<double, 7, 7>  m_inverseWeighing = Eigen::Matrix<double, 7, 7> ::Identity();
+	double m_activationFactorTaskSpace = 1.0;
+	Eigen::Matrix<double, 7, 1> nullSpaceVelocity = -m_inverseWeighing * nullSpaceGradient;
+	broccoli::core::math::solvePseudoInverseEquation(J, m_inverseWeighing, effectiveTaskSpaceInput, nullSpaceVelocity, m_activationFactorTaskSpace);
 	
 	// perform integration over one timestep to obtain positions that can be send to robot
-	desq << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+	jointAnglesDelta << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 	// integrate value over one time step
-	desq *= dt;
+	jointAnglesDelta *= dt;
 
 	//std::cout << "current qs in DEG \n" << jointAngles* rl::math::RAD2DEG << std::endl;
-	std::cout << "delta qs in DEG \n" << desq * rl::math::RAD2DEG << std::endl;
-	//std::cout << "next qs in DEG \n" << (jointAngles+desq)* rl::math::RAD2DEG << std::endl;
+	std::cout << "delta qs in DEG \n" << jointAnglesDelta * rl::math::RAD2DEG << std::endl;
+	//std::cout << "next qs in DEG \n" << (jointAngles+jointAnglesDelta)* rl::math::RAD2DEG << std::endl;
 
 	// forward kinematics with the new joints values from IK
-	kinematic->setPosition(jointAngles+desq);
+	kinematic->setPosition(jointAngles+jointAnglesDelta);
 	kinematic->forwardPosition();
 
 	rl::math::Transform dest = kinematic->getOperationalPosition(0);
 	rl::math::Vector3 dposition = dest.translation();
 	rl::math::Vector3 dorientation = dest.rotation().eulerAngles(2, 1, 0).reverse();
-	std::cout << "IK joint configuration in degrees: " << (jointAngles+desq).transpose() * rl::math::RAD2DEG << std::endl;
+	std::cout << "IK joint configuration in degrees: " << (jointAngles+jointAnglesDelta).transpose() * rl::math::RAD2DEG << std::endl;
 	std::cout << "IK end-effector position: [m] " << dposition.transpose() << " orientation [deg] " << dorientation.transpose() * rl::math::RAD2DEG << std::endl;
 	
 	resPose << dposition.transpose()(0), dposition.transpose()(1), dposition.transpose()(2), dorientation.transpose()(0), dorientation.transpose()(1), dorientation.transpose()(2);
 
 	// return desired joint angles for the next step and pose for computing the IK accuracy
-	return std::make_pair((jointAngles+desq), resPose);
+	return std::make_pair((jointAngles+jointAnglesDelta), resPose);
 }
 
