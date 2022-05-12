@@ -4,12 +4,15 @@
 #include <broccoli/control/Signal.hpp>
 #include <broccoli/control/kinematics/AutomaticSupervisoryControl.hpp>
 #include <broccoli/control/kinematics/ComfortPoseGradient.hpp>
+#include <broccoli/core/math.hpp>
 
 #include <rl/math/Transform.h>
 #include <rl/math/Unit.h>
 #include <rl/mdl/Kinematic.h>
 #include <rl/mdl/Model.h>
 #include <rl/mdl/UrdfFactory.h>
+
+#include <Eigen/Geometry> 
 
 
 
@@ -24,13 +27,9 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	// instantiate vars vor Automatic Supervisory Control (ASC)
 	Eigen::Matrix<double, 7, 1> nullSpaceGradient = Eigen::Matrix<double, 7, 1>::Zero();
 	Eigen::Matrix<double, 7, 1> manipGradient = Eigen::Matrix<double, 7, 1>::Zero();
-	Eigen::Matrix<double, 6, 1> actualPose;
-	Eigen::Matrix<double, 6, 1> dPosition;
+	Eigen::Matrix<double, 3, 1> currentTranslation;
 	Eigen::Matrix<double, 6, 1> resPose;
 	const double dt = 0.0125; // refers to 80 Hz
-
-	// create ASC object and execute its functions for inverse kinematics
-	broccoli::control::AutomaticSupervisoryControl<6,7> ik;
 	
 	// define min and max values for the joints of Yumi
 	Eigen::Matrix< double, 7, 1> q_min;
@@ -46,16 +45,13 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	
 	// desired joint values after doing the inverse kinematics
 	Eigen::Matrix<double, 7, 1> desq;
+
 	
 	// FORWARD KINEMATICS
 	rl::mdl::UrdfFactory factory;
 	
-	// Use the left arm as default PROBLEM HERE!!!!!
+	// Use the left arm as default - extend by choosing right arm as an option
 	std::shared_ptr<rl::mdl::Model> model(factory.create("/home/joschua/Coding/forceControl/master-project/c++/src/urdf/yumi_left.urdf"));
-	// overwrite model if right arm is choosen
-	//if (arm == 1){
-//		std::shared_ptr<rl::mdl::Model> model(factory.create("/home/joschua/Coding/forceControl/master-project/c++/src/urdf/yumi_right.urdf"));
-//	};
 
 	rl::mdl::Kinematic* kinematic = dynamic_cast<rl::mdl::Kinematic*>(model.get());
 
@@ -86,19 +82,32 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	// INVERSE KINEMATICS
 	// obtained from forward kinematics, later the current configuration read from egm interface
 
-	//actualPose << position.transpose()(0), position.transpose()(1), position.transpose()(2), orientation.transpose()(0), orientation.transpose()(1), orientation.transpose()(2);
-	// manually set the orientation
-	actualPose << position.x(), position.y(), position.z(), 90.0 * rl::math::DEG2RAD, 180.0 * rl::math::DEG2RAD, 90.0 * rl::math::DEG2RAD;
-	// apply vel that results from actualPose and desPose
-	desVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+	Eigen::Matrix3d desOrientation;
+	// go from Euler ZYX to rotation matrix
+	desOrientation = Eigen::AngleAxisd(desPose(5), Eigen::Vector3d::UnitZ())
+					*Eigen::AngleAxisd(desPose(4), Eigen::Vector3d::UnitY())
+					*Eigen::AngleAxisd(desPose(3), Eigen::Vector3d::UnitX());
+					
+	std::cout << "desPose" << desPose << std::endl;
+	//std::cout << "desPose3    " << desPose(4) << std::endl;
+	std::cout << "desOrientation" << desOrientation << std::endl;
+
+	std::cout << "reverse euler angles" << desOrientation.eulerAngles(2, 1, 0).reverse();
+	//std::cout << "RL Orientation" << t.rotation();
+	// define Quaternion with coefficients in the order [x, y, z, w] 
+	Eigen::Quaterniond desiredOrientation(desOrientation);
+
+	//currentTranslation << position.transpose()(0), position.transpose()(1), position.transpose()(2), orientation.transpose()(0), orientation.transpose()(1), orientation.transpose()(2);
+	// set the current positions
+	currentTranslation << position.x(), position.y(), position.z();
+	Eigen::Quaterniond currentOrientation(t.rotation());
 	
+	// COMPUTE GRADIENTS
 	// compute CPG gradient
 	cpg.useRangeBasedScaling(q_min, q_max);
 	//cpg.setWeight() by default it is 1
 	cpgGradient = cpg.process(jointAngles, jointVelocity);	// if gradient is zero then the ASC is just a resolved motion ik method
 	//cpg.setPose(jointAngles);
-	
-
 	// compute Jacobian derivative - code snippet from Jonas Wittmann
 	std::array<Eigen::Matrix<double, 6, 7>, 7> dJ; // NOLINT
     for (auto& matrix : dJ) {
@@ -118,35 +127,36 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
             }
         }
     }
-
 	// compute Manipulability gradient
 	// Compute the derivative of the Jacobian w.r.t. the joint angles.
     //Eigen::Matrix<double, 6, 7>, 7> ddJ_r = jacobianDerivative(J);
     // Current cost.
     double cost = sqrt((J * J.transpose()).determinant());
     // Compute the manipulability gradient.
-    
     for (int jj = 0; jj < 7; ++jj) {
         manipGradient[jj] = cost * ((J * J.transpose()).inverse() * dJ.at(jj) * J.transpose()).trace();
     }
-
 	// add both gradients
 	nullSpaceGradient = 0*manipGradient + 0*cpgGradient;
 	//std::cout << "gradient \n" << nullSpaceGradient << std::endl;
+
+
 
 	// do the inverse kinematics
 	//ik.setWeighingMatrix(weightingFactors); // by default the identity matrix
 	//ik.setTaskSpaceConstraintFactor(activationFactor); // is set to 1 by default
 	// set feedback gain for effective desired velocity
-	ik.setDriftCompensationGain(0.5); // set to 1 by default, 0.5 is still too high, 0.01 works
+	//ik.setDriftCompensationGain(0.5); // set to 1 by default, 0.5 is still too high, 0.01 works
 	// set the target position and velocity
-	ik.setTarget(desPose, desVelocity); // needs to be specified in order to give reasonable results for ik.outoutVelocity
-
+	//ik.setTarget(desPose, desVelocity); // needs to be specified in order to give reasonable results for ik.outoutVelocity
 	// compute the desired velocities in taskspace
-	ik.process(J, actualPose, nullSpaceGradient, dt);
+	//ik.process(J, currentTranslation, nullSpaceGradient, dt);
+
+	// ASC desired effective velocity does not work -> implement myself
+	//broccoli::core::math::solvePseudoInverseEquation(taskSpaceJacobian, m_inverseWeighing, effectiveDesiredVelocity, nullSpaceVelocity, m_activationFactorTaskSpace);
 	
 	// perform integration over one timestep to obtain positions that can be send to robot
-	desq << ik.outputVelocity().value();
+	desq << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 	// integrate value over one time step
 	desq *= dt;
 
@@ -169,3 +179,4 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	// return desired joint angles for the next step and pose for computing the IK accuracy
 	return std::make_pair((jointAngles+desq), resPose);
 }
+
