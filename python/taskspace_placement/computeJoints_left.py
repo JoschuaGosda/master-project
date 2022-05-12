@@ -64,8 +64,8 @@ computedPose = np.zeros((len(p1[:,0]),6))
 error = np.zeros((len(p1[:,0]),6))
 
 for index, (pos, vel, phi, phi_dot) in enumerate(zip(p1, v1, phi_total, dphi)): # loop through all the desired position of left arm
-    desPose = np.concatenate((pos, phi_const), axis=0) # note that phi_const is used -> same orientation throughout the movement
-    desVelocities = np.concatenate((vel, dphi_const), axis=0) # same here
+    desPose = np.concatenate((pos, phi), axis=0) # note that phi_const is used -> same orientation throughout the movement
+    desVelocities = np.concatenate((vel, phi_dot), axis=0) # same here
     # call the c++ egm function, return joint values and resulting pose
     result = invKin.gpm(desPose, desVelocities, jointAngles, jointVelocities, 1)
     desJointAngles[index,:] = result[0] # computed joint values from IK
@@ -111,6 +111,14 @@ fig.get_axes()[0].set_xlabel('x axis of yumi')
 fig.get_axes()[0].set_ylabel('z axis of yumi')
 plt.legend()
 plt.title('view on the x-z plane from the right arm side of yumi')
+plt.show()
+
+fig = plt.figure()
+plt.plot(computedPose[:,3], label='rx')
+plt.plot(computedPose[:,4], label='ry')
+plt.plot(computedPose[:,5], label='rz')
+plt.legend()
+plt.title('euler angles over trajectories')
 plt.show()
 
 np.save('desJointAngles_left', desJointAngles)

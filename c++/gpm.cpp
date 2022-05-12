@@ -113,6 +113,8 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	effectiveTaskSpaceInput.head(3) = gainDriftCompensation/dt * (desiredTranslation - currentTranslation)
 										+ desVelocity.head(3);
 	effectiveTaskSpaceInput.tail(3) = gainDriftCompensation/dt * errorRotationInWorldFrame + desVelocity.tail(3);
+	std::cout << "effectiveTaskSpaceInput: " << effectiveTaskSpaceInput << std::endl;
+
 
 	// COMPUTE GRADIENTS
 	// define min and max values for the joints of Yumi
@@ -172,12 +174,13 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	Eigen::Matrix<double, 7, 7>  m_inverseWeighing = Eigen::Matrix<double, 7, 7> ::Identity();
 	double m_activationFactorTaskSpace = 1.0;
 	Eigen::Matrix<double, 7, 1> nullSpaceVelocity = -m_inverseWeighing * nullSpaceGradient;
-	broccoli::core::math::solvePseudoInverseEquation(J, m_inverseWeighing, effectiveTaskSpaceInput, nullSpaceVelocity, m_activationFactorTaskSpace);
+	Eigen::Matrix<double, 7, 1> jointVelocities;
+	jointVelocities = broccoli::core::math::solvePseudoInverseEquation(J, m_inverseWeighing, effectiveTaskSpaceInput, nullSpaceVelocity, m_activationFactorTaskSpace);
 	
+	std::cout << "resulting jointVelocities: \n" << jointVelocities << std::endl;
 	// perform integration over one timestep to obtain positions that can be send to robot
-	jointAnglesDelta << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-	// integrate value over one time step
-	jointAnglesDelta *= dt;
+	jointAnglesDelta << jointVelocities * dt;
+
 
 	//std::cout << "current qs in DEG \n" << jointAngles* rl::math::RAD2DEG << std::endl;
 	std::cout << "delta qs in DEG \n" << jointAnglesDelta * rl::math::RAD2DEG << std::endl;
