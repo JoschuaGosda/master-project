@@ -1,11 +1,13 @@
-import math
-import sys
-import os
+from enum import Enum
 from matplotlib import pyplot as plt
 
 import numpy as np
 import copy
 import invKin
+
+class Yumi(Enum):
+    RIGHT = False
+    LEFT = True
 
 # READ IN THE TRAJECTORY
 # define staring postition in workspace for left arm - found by try and error in RS
@@ -50,8 +52,6 @@ dt = 0.0125
 
 
 phi_const = np.array([90.0, 180.0, 90.0]) * np.pi/180.0 # values that FK computed, keep angle the same for now, just care about positions
-#phi_const = np.array([106.0, 90.0, 106.0]) * np.pi/180.0 
-#phi_const = np.array([100.0, 90.0, 120.0]) * np.pi/180.0 
 dphi_const = np.array([0.0, 0.0, 0.0]) * np.pi/180.0
 
 # build the final angles for the orientation of end effector - don't use it for now
@@ -67,7 +67,7 @@ for index, (pos, vel, phi, phi_dot) in enumerate(zip(p1, v1, phi_total, dphi)): 
     desPose = np.concatenate((pos, phi), axis=0) # note that phi_const is used -> same orientation throughout the movement
     desVelocities = np.concatenate((vel, phi_dot), axis=0) # same here
     # call the c++ egm function, return joint values and resulting pose
-    result = invKin.gpm(desPose, desVelocities, jointAngles, jointVelocities, 1)
+    result = invKin.gpm(desPose, desVelocities, jointAngles, jointVelocities, Yumi.LEFT.value)
     desJointAngles[index,:] = result[0] # computed joint values from IK
     computedPose[index, :] = result[1] # resulting pose with joint values from IK
     if index > 0:
@@ -123,5 +123,3 @@ plt.show()
 
 np.save('desJointAngles_left', desJointAngles)
 
-
-# TODO compare the errors and closeness to singularities (can use square sum for the errors)
