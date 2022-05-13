@@ -14,7 +14,7 @@ class Yumi(Enum):
 desp_start = np.array([0.3, 0.2, 0.2])
 
 # import the preprocessing data
-data = np.load('/home/joschua/Coding/forceControl/master-project/python/taskspace_placement/traj_data.npy')
+data = np.load('./traj_data.npy')
 # for each var x | y | z
 p1 = data[:, 0:3]
 v1 = data[:, 3:6]
@@ -121,5 +121,5 @@ plt.legend()
 plt.title('euler angles over trajectories')
 plt.show()
 
-np.save('desJointAngles_left', desJointAngles)
+np.save('./abb_egm_pyclient/abb_egm_pyclient/desJointAngles_left', desJointAngles)
 
