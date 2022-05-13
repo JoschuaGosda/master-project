@@ -211,4 +211,4 @@ plt.show()
 
 # make data ready for export
 traj_data = np.hstack((p1m, v1, p2m, v2, ang, odot))
-np.save('./taskspace_placement/traj_data', traj_data)
+np.save('traj_data', traj_data)

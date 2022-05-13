@@ -16,38 +16,28 @@ reading force sensor data.
 '''
 
 
-DEFAULT_UDP_PORT = 6510
-comp_conf = np.load('./abb_egm_pyclient/abb_egm_pyclient/desJointAngles_left.npy')
+UDP_PORT_LEFT = 6510
+UDP_PORT_RIGHT = 6511
+comp_conf_left = np.load('./abb_egm_pyclient/abb_egm_pyclient/feedforward/desJointAngles_left.npy')
+comp_conf_right = np.load('./abb_egm_pyclient/abb_egm_pyclient/feedforward/desJointAngles_right.npy')
 rate = 80
 
 def logic2abb(joint_values):
     return joint_values[[0, 1, 3, 4, 5, 6, 2]]
 
-def abb2logic(joint_values):
-    return joint_values[[0, 1, 5, 2, 3, 4]]
 
+egm_client_left = EGMClient(port=UDP_PORT_LEFT)
+egm_client_right = EGMClient(port=UDP_PORT_RIGHT)
 
-
-#mylist = [1, 2, 3, 4, 5, 6]
-#mylist.insert(2, 7)
-#print("mylist", mylist)
-
-egm_client = EGMClient(port=DEFAULT_UDP_PORT)
-
+print("waiting to receive msg")
 # get the current values of joints
-robot_msg = egm_client.receive_msg()
-conf: Sequence[float] = robot_msg.feedBack.joints.joints # get ABB's standard six joint values
-joint7 = robot_msg.feedBack.externalJoints.joints[0]
-conf.insert(2, joint7)
-conf_yumi = np.array(conf)
+robot_msg_L = egm_client_left.receive_msg()
+robot_msg_R = egm_client_right.receive_msg()
 
-
-conf_des = comp_conf[0, :]
-print("des conf", conf_des)
-print("arranged", logic2abb(conf_des))
-
-print(conf_yumi)
-print(conf_des)
+conf_L: Sequence[float] = robot_msg_L.feedBack.joints.joints # get ABB's standard six joint values
+joint7 = robot_msg_L.feedBack.externalJoints.joints[0]
+conf_L.insert(2, joint7)
+conf_yumi_L = np.array(conf_L)
 
 
 # check if real joint value match the computed starting joint positions 
@@ -56,18 +46,23 @@ print(conf_des)
 #assert (conf_diff-condition).all(), 'Starting configurations are not synchronized'
 
 
-for n in range(len(comp_conf[:,0])):
+for n in range(len(comp_conf_left[:,0])):
     sTime = time.time()
-    robot_msg = egm_client.receive_msg()
-    conf: Sequence[float] = robot_msg.feedBack.joints.joints
-    joint7 = robot_msg.feedBack.externalJoints.joints[0]
-    conf.insert(2, joint7)
-    conf_yumi = np.array(conf)
 
-    print(f"Current configuration {conf_yumi}")
+    # do stuff for the left arm
+    robot_msg_L = egm_client_left.receive_msg()
+    conf_L: Sequence[float] = robot_msg_L.feedBack.joints.joints
+    joint7 = robot_msg_L.feedBack.externalJoints.joints[0]
+    conf_L.insert(2, joint7)
+    conf_yumi_L = np.array(conf_L)
 
-    des_conf = np.degrees(comp_conf[n, :])
-    egm_client.send_planned_configuration(logic2abb(des_conf))
+    print(f"Current configuration of left arm {conf_yumi_L}")
+
+    # send out
+    des_conf_L = np.degrees(comp_conf_left[n, :])
+    des_conf_R = np.degrees(comp_conf_right[n, :])
+    egm_client_left.send_planned_configuration(logic2abb(des_conf_L))
+    egm_client_right.send_planned_configuration(logic2abb(des_conf_R))
 
     # take the execution time into account that loops stays iterating with the rate frequency
     # get more important the higher rate becomes like 100-250
@@ -77,7 +72,7 @@ for n in range(len(comp_conf[:,0])):
 # after all messages are sent out, wait for 10 sec and check if positions converged
 n = 0
 while n < 10:
-    robot_msg = egm_client.receive_msg()
+    robot_msg = egm_client_left.receive_msg()
     if robot_msg.mciConvergenceMet:
         print("Joint positions converged.")
         break
