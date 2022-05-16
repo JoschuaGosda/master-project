@@ -5,6 +5,7 @@ import time
 
 import numpy as np
 
+
 from abb_egm_pyclient import EGMClient
 
 '''
@@ -67,7 +68,7 @@ for n in range(len(comp_conf_left[:,0])):
     # take the execution time into account that loops stays iterating with the rate frequency
     # get more important the higher rate becomes like 100-250
     sleeping_time = 1/rate - (time.time()-sTime)
-    time.sleep(sleeping_time) 
+    time.sleep(1/rate) 
 
 # after all messages are sent out, wait for 10 sec and check if positions converged
 n = 0

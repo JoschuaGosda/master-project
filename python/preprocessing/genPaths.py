@@ -34,6 +34,8 @@ pos1, pos2 = pos_split[0]*0.001, pos_split[1]*0.001 # transform to SI-units - [m
 c_speed = 3000 * 0.001 * 1/60 # define cutting speed as 300 mm/min [m/s]
 st = 1.0/80.0 # highest possible sample time - 250 Hz
 
+# modificatin to delete in order to check angles in RS
+# pos2 = pos2 + np.array([0, 0.1]) # get 10 cm higher
 
 # initialize list with first element
 p1x = []
@@ -136,10 +138,10 @@ for i in range(pNum):
     dLen = hyp2 - wLen 
     
     # compute rotation matrices
-    # rotation in negative direction
+    # rotation in positive direction
     Rx = np.array([[1, 0, 0], 
-              [0, cos(ang[i,0]), sin(ang[i,0])],
-              [0, -sin(ang[i,0]), cos(ang[i,0])]])
+              [0, cos(-ang[i,0]), -sin(-ang[i,0])],
+              [0, sin(-ang[i,0]), cos(-ang[i,0])]])
 
     # rotation in postive direction
     Ry = np.array([[cos(ang[i,1]), 0, sin(ang[i,1])], 
@@ -149,7 +151,8 @@ for i in range(pNum):
     # rotation matrix
     # self defined convention: rotate around y axis, then around x axis the get from  initial frame to wire frame
     # rotation from initial to first frame (z-axis aligned with wire)
-    R01 = Ry @ Rx
+    #R01 = Ry @ Rx
+    R01 = Rx @ Ry
     # rotation from first frame to initial frame
     R10 = np.transpose(R01)
 
@@ -158,7 +161,7 @@ for i in range(pNum):
     r0_01 = np.array([[x1], [y1], [0]])
     # vector in wires direction in first frame
     r1_12 = np.array([[0], [0], [wLen]])
-    r0_12 = R01 @ r1_12
+    r0_12 = R10 @ r1_12
     r0_02 = r0_12 + r0_01
 
     # store values, cut last entry being 1 that was added for the transformation
@@ -197,6 +200,13 @@ for i, (r12,r22_) in enumerate(zip(dist_12, dist_22_)):
     assert np.abs(r12 - wLen) < 0.00001, "path coordinate of p2 violates wire's constraint"
     assert (effLen[i, 0] - wLen - r22_) < 0.00001, "path coordinate of p2 violates against to be compensated length difference"
 
+
+fig = plt.figure()
+plt.scatter(p1m[50, 0], p1m[50, 1], label="p1")
+plt.scatter(p2m_ref[50, 0], p2m_ref[50,1], label="p2_ref")
+plt.scatter(p2m[50, 0], p2m[50,1], label="p2")
+plt.legend()
+plt.show()
 
 # plot the data for visualisation
 fig = plt.figure()
