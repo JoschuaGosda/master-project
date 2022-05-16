@@ -116,7 +116,7 @@ z1 = np.zeros((pNum,1))
 z2 = np.ones((pNum,1)) * wLen
 # append z axis to position vectors
 p1m = np.hstack((p1,z1))
-p2m = np.hstack((p1,z2))
+p2m = np.hstack((p2,z2))
 p2m_ref = np.hstack((p2,z2)) # original coordinates
 # define array to compute distance between effectors
 effLen = np.zeros((pNum,1))
@@ -133,20 +133,20 @@ for i in range(pNum):
     hyp1 = sqrt(dx**2 + wLen**2) # calculate first hypothenuse
     hyp2 = sqrt(dy**2 + hyp1**2) 
     ang[i, 1] = np.arctan(dx/wLen) # rotation around y-axis from oringal frame
-    ang[i, 0] = np.arctan(dy/hyp1) # rotation around x-axis in already rotated frame
+    ang[i, 0] = -np.arctan(dy/hyp1) # rotation around x-axis in already rotated frame
     effLen[i, 0] = hyp2 # effective length
     dLen = hyp2 - wLen 
     
     # compute rotation matrices
     # rotation in positive direction
     Rx = np.array([[1, 0, 0], 
-              [0, cos(-ang[i,0]), -sin(-ang[i,0])],
-              [0, sin(-ang[i,0]), cos(-ang[i,0])]])
+              [0, cos(ang[i,0]), sin(ang[i,0])],
+              [0, -sin(ang[i,0]), cos(ang[i,0])]])
 
     # rotation in postive direction
-    Ry = np.array([[cos(ang[i,1]), 0, sin(ang[i,1])], 
+    Ry = np.array([[cos(ang[i,1]), 0, -sin(ang[i,1])], 
               [0, 1, 0],
-              [-sin(ang[i,1]), 0, cos(ang[i,1])]])
+              [sin(ang[i,1]), 0, cos(ang[i,1])]])
 
     # rotation matrix
     # self defined convention: rotate around y axis, then around x axis the get from  initial frame to wire frame
@@ -202,21 +202,21 @@ for i, (r12,r22_) in enumerate(zip(dist_12, dist_22_)):
 
 
 fig = plt.figure()
-plt.scatter(p1m[50, 0], p1m[50, 1], label="p1")
-plt.scatter(p2m_ref[50, 0], p2m_ref[50,1], label="p2_ref")
-plt.scatter(p2m[50, 0], p2m[50,1], label="p2")
+plt.scatter(p1m[200:300, 0], p1m[200:300, 2], label="p1")
+plt.scatter(p2m_ref[200:300, 0], p2m_ref[200:300,2], label="p2_ref")
+plt.scatter(p2m[200:300, 0], p2m[200:300,2], label="p2")
 plt.legend()
 plt.show()
 
 # plot the data for visualisation
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-#ax.scatter(p1m[:,0],p1m[:,1],p1m[:,2])
+ax.scatter(p1m[:,0],p1m[:,1],p1m[:,2])
 ax.scatter(p2m[:,0],p2m[:,1],p2m[:,2])
 ax.scatter(p2m_ref[:,0],p2m_ref[:,1],p2m_ref[:,2])
 ax.set_xlim(0,0.170)
 ax.set_ylim(0,0.100)
-ax.set_zlim(0.795,0.805)
+ax.set_zlim(0.395,0.405)
 plt.show()
 
 # make data ready for export
