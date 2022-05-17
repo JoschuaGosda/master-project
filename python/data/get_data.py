@@ -48,6 +48,10 @@ def place_trajectory(start_des, p1, p2):
     
     return p1, p2
 
+# rearrange the logic joint values to the strange convention abb has
+def logic2abb(joint_values):
+    return joint_values[[0, 1, 3, 4, 5, 6, 2]]
+
 class Yumi(Enum):
     RIGHT = False
     LEFT = True

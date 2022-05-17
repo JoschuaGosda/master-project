@@ -17,6 +17,9 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	rl::mdl::UrdfFactory factory;
 	std::string path2urdf;
 
+	const clock_t t0 = clock();
+
+
 	if(left_arm){
 		path2urdf = "/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf";
 	} else{
@@ -26,6 +29,9 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	std::shared_ptr<rl::mdl::Model> model(factory.create(path2urdf));
 
 	rl::mdl::Kinematic* kinematic = dynamic_cast<rl::mdl::Kinematic*>(model.get());
+
+	const clock_t t1 = clock();
+	std::cout << "time for parsing model: \t" << t1-t0 << std::endl;
 
 	// forward kinematics for the right arm
 	kinematic->setPosition(jointAngles);
@@ -40,6 +46,9 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 		}
 	}
 
+	const clock_t t2 = clock();
+	std::cout << "time for copy jacobi: \t" << t2-t1 << std::endl;
+
 	// check if matrices are the same
 	//std::cout << "RLJacobian \n" << kinematic->getJacobian() << std::endl;
 	//std::cout << "myJacobian \n" << J << std::endl;
@@ -52,7 +61,8 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	std::cout << "Joint configuration in degrees: " << jointAngles.transpose() * rl::math::RAD2DEG << std::endl;
 	std::cout << "FK end-effector position: [m] " << position.transpose() << " orientation [deg] " << orientation.transpose() * rl::math::RAD2DEG << std::endl;
 	
-
+	const clock_t t3 = clock(); 
+	std::cout << "time for extracting & printing: \t" << t3-t2 << std::endl;
 	// INVERSE KINEMATICS
 	// compute translation and orientation error
 	Eigen::Matrix3d desOrientation;
@@ -102,6 +112,9 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	std::cout << "effectiveTaskSpaceInput: " << effectiveTaskSpaceInput << std::endl;
 
 
+	const clock_t t4 = clock();
+	std::cout << "time for taskspace input: \t" << t4-t3 << std::endl;
+
 	// COMPUTE CPG GRADIENT
 	// define min and max values for the joints of Yumi
 	Eigen::Matrix< double, 7, 1> q_min;
@@ -149,6 +162,9 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	// add both gradients
 	Eigen::Matrix<double, 7, 1> nullSpaceGradient = Eigen::Matrix<double, 7, 1>::Zero();
 	nullSpaceGradient = 0*manipGradient + 0*cpgGradient;
+
+	const clock_t t5 = clock();
+	std::cout << "time for gradients: \t" << t5-t4 << std::endl;
 	//std::cout << "gradient \n" << nullSpaceGradient << std::endl;
 
 
@@ -163,6 +179,9 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	// perform integration over one timestep to obtain positions that can be send to robot
 	Eigen::Matrix<double, 7, 1> jointAnglesDelta;
 	jointAnglesDelta << jointVelocities * dt;
+
+	const clock_t t6 = clock();
+	std::cout << "time for pseudo: \t" << t6-t5 << std::endl;
 
 	//std::cout << "current qs in DEG \n" << jointAngles* rl::math::RAD2DEG << std::endl;
 	//std::cout << "delta qs in DEG \n" << jointAnglesDelta * rl::math::RAD2DEG << std::endl;
