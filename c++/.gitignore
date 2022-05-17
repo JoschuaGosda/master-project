@@ -1,6 +1,0 @@
-#Ignore build folder
-build/
-
-#Files
-*.pdf
-*.gv
