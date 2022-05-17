@@ -14,8 +14,8 @@ the IK does not take the real joint angles and velocities into account but suppo
 
 UDP_PORT_LEFT = 6510
 UDP_PORT_RIGHT = 6511
-comp_conf_left = get_desJoints_L
-comp_conf_right = get_desJoints_R
+comp_conf_left = get_desJoints_L()
+comp_conf_right = get_desJoints_R()
 
 
 rate = 80

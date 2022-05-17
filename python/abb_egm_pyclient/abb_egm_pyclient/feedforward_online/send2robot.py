@@ -4,6 +4,7 @@ import time
 import numpy as np
 from abb_egm_pyclient import EGMClient
 from data.get_data import get_desJoints_L, get_desJoints_R
+from libs.invKin import gpm
 
 '''
 Before running this script make sure that the starting pose of the robot (either real one or in RS) match the
@@ -14,8 +15,8 @@ joint positions at the robot into account
 
 UDP_PORT_LEFT = 6510
 UDP_PORT_RIGHT = 6511
-comp_conf_left = get_desJoints_L
-comp_conf_right = get_desJoints_R
+comp_conf_left = get_desJoints_L()
+comp_conf_right = get_desJoints_R()
 rate = 80
 
 # rearrange the logic joint values to the strange convention abb has

@@ -1,50 +1,22 @@
 
-from enum import Enum
+
 from matplotlib import pyplot as plt
 
 import numpy as np
 import copy
 from libs.invKin import gpm
 
-from data.get_data import get_trajectory
+from data.get_data import get_trajectory, transform2yumi_workspace, place_trajectory, Yumi
 
-
-class Yumi(Enum):
-    RIGHT = False
-    LEFT = True
 
 # READ IN THE TRAJECTORY
-# define staring postition in workspace for left arm - found by try and error in RS
-desp_start = np.array([0.3, 0.2, 0.2])
-
-# import the preprocessing data
-#data = np.load('./taskspace_placement/traj_data.npy')
-# for each var x | y | z
-#p1 = data[:, 0:3]
-#v1 = data[:, 3:6]
-#p2 = data[:, 6:9]
-#v2 = data[:, 9:12]
-#phi_delta = data[:, 12:15]
-#dphi = data[:, 15:18]
-
+# get the data in the yumi workspace
 p1, v1, p2, v2, phi_delta, dphi = get_trajectory()
+p1, v1, p2, v2, phi_delta, dphi = transform2yumi_workspace(p1, v1, p2, v2, phi_delta, dphi)
 
-# coordinates system differ and need to be synchronized - y -> z, x -> x, z -> -y
-for m in [p1, v1, p2, v2, phi_delta, dphi]:
-    copy_col = copy.copy(m[:, 2]) # copy z
-    m[:, 2] = m[:, 1] # shift y to z
-    m[:, 1] = -copy_col # copy z to y
-
-# place the trajectories within the workspace of the robot
-# read the coordinates of p1 (that refers to the left arm) and modify it to match to desired 
-# starting postion
-p_start = p1[0, :]
-offset = desp_start - p_start
-
-# apply offset to all position coordinates
-for i in range(len(p1[:,0])):
-    p1[i,:] = p1[i,:] + offset
-    p2[i,:] = p2[i,:] + offset
+# define staring postition in workspace for left arm - found by try and error in RS
+p1_start_des = np.array([0.3, 0.2, 0.2])
+p1, p2 = place_trajectory(p1_start_des, p1, p2)
 
 
 # START CONFIGURATION FOR THE LEFT ARM
