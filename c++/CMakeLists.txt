@@ -1,27 +1,40 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 project(invKin VERSION 0.1.0)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 14) # broccoli needs c++ standard 14 or above
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Include cmake modules
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# include header files for rt, could not be found following the tutorial
-include_directories(/usr/include/rl-0.7.0)
+include_directories(./include)
+#link_directories(${MyProject_SOURCE_DIR}/src)
 
+# find all the packages that are installed globally to the os
+find_package (Eigen3 REQUIRED NO_MODULE)
 find_package (broccoli 3.0.0 COMPONENTS eigen REQUIRED)
 find_package(RL COMPONENTS MDL REQUIRED)
 
-add_executable(myProgram main.cpp)
-
+# dependencies for gpm function
+add_library(gpm SHARED src/gpm.cpp)
 target_link_libraries (
-    myProgram 
+    gpm 
+    ${RL_LIBRARIES}
+    eat::broccoli
+    Eigen3::Eigen
+)
+
+# dependencies for pybind11
+add_subdirectory(deps/pybind11) # include pybind11 as a submodule
+pybind11_add_module(invKin src/py2gpmbind.cpp)
+target_link_libraries(
+    invKin PUBLIC 
+    gpm
     ${RL_LIBRARIES}
     eat::broccoli
 )
 
-
-
-
-
+add_executable(myMain src/main.cpp src/gpm.cpp)
+target_link_libraries(
+    myMain
+    eat::broccoli
+    ${RL_LIBRARIES}
+)
