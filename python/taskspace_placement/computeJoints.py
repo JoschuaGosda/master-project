@@ -1,10 +1,13 @@
+
 from enum import Enum
-from matplotlib import pyplot as plt, transforms
+from matplotlib import pyplot as plt
 
 import numpy as np
-from scipy.spatial.transform import Rotation as R
 import copy
-import invKin
+from libs.invKin import gpm
+
+from data.get_data import get_trajectory
+
 
 class Yumi(Enum):
     RIGHT = False
@@ -15,14 +18,16 @@ class Yumi(Enum):
 desp_start = np.array([0.3, 0.2, 0.2])
 
 # import the preprocessing data
-data = np.load('./taskspace_placement/traj_data.npy')
+#data = np.load('./taskspace_placement/traj_data.npy')
 # for each var x | y | z
-p1 = data[:, 0:3]
-v1 = data[:, 3:6]
-p2 = data[:, 6:9]
-v2 = data[:, 9:12]
-phi_delta = data[:, 12:15]
-dphi = data[:, 15:18]
+#p1 = data[:, 0:3]
+#v1 = data[:, 3:6]
+#p2 = data[:, 6:9]
+#v2 = data[:, 9:12]
+#phi_delta = data[:, 12:15]
+#dphi = data[:, 15:18]
+
+p1, v1, p2, v2, phi_delta, dphi = get_trajectory()
 
 # coordinates system differ and need to be synchronized - y -> z, x -> x, z -> -y
 for m in [p1, v1, p2, v2, phi_delta, dphi]:
@@ -61,7 +66,7 @@ for index, (pos, vel, phi, phi_dot) in enumerate(zip(p1, v1, phi_delta, dphi)): 
     desPose = np.concatenate((pos, phi), axis=0) 
     desVelocities = np.concatenate((vel, phi_dot), axis=0) 
     # call the c++ egm function, return joint values and resulting pose
-    result = invKin.gpm(desPose, desVelocities, jointAngles, jointVelocities, Yumi.LEFT.value)
+    result = gpm(desPose, desVelocities, jointAngles, jointVelocities, Yumi.LEFT.value)
     desJointAngles_left[index,:] = result[0] # computed joint values from IK
     computedPose_left[index, :] = result[1] # resulting pose with joint values from IK
     if index > 0:
@@ -83,7 +88,7 @@ jointAngles = np.array([-110.0, 29.85, 35.92, 49.91, 117.0, 123.0, -117.0]) * np
 for index, (pos, vel, phi, phi_dot) in enumerate(zip(p2, v2, phi_delta, dphi)): # loop through all the desired position of left arm
     desPose = np.concatenate((pos, phi), axis=0) 
     desVelocities = np.concatenate((vel, phi_dot), axis=0) 
-    result = invKin.gpm(desPose, desVelocities, jointAngles, jointVelocities, Yumi.RIGHT.value)
+    result = gpm(desPose, desVelocities, jointAngles, jointVelocities, Yumi.RIGHT.value)
     desJointAngles_right[index,:] = result[0] 
     computedPose_right[index, :] = result[1] 
     if index > 0:
@@ -158,6 +163,6 @@ plt.legend()
 plt.title('errors right')
 plt.show()
 
-np.save('desJointAngles_left', desJointAngles_left)
-np.save('desJointAngles_right', desJointAngles_right)
+np.save('data/desJointAngles_left', desJointAngles_left)
+np.save('data/desJointAngles_right', desJointAngles_right)
 

@@ -7,8 +7,8 @@ from data.get_data import get_desJoints_L, get_desJoints_R
 
 '''
 Before running this script make sure that the starting pose of the robot (either real one or in RS) match the
-starting pose of the computed joint angles. This script sends desired joint position to the robot. Note however, that
-the IK does not take the real joint angles and velocities into account but supposes that they are applied without errors.
+starting pose of the computed joint angles. This script sends desired joint position to the robot. It takes to real
+joint positions at the robot into account
 '''
 
 
@@ -16,8 +16,6 @@ UDP_PORT_LEFT = 6510
 UDP_PORT_RIGHT = 6511
 comp_conf_left = get_desJoints_L
 comp_conf_right = get_desJoints_R
-
-
 rate = 80
 
 # rearrange the logic joint values to the strange convention abb has
