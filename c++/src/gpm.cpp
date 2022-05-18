@@ -16,11 +16,20 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 
 	// FORWARD KINEMATICS
 	rl::mdl::Kinematic* kinematic = (rl::mdl::Kinematic*) kinematic_ptr;
+	
 
 	std::cout << "pointer in gpm" << kinematic_ptr << std::endl;
 	//rl::mdl::Kinematic* kinematic = kinematicPtr;
 
+	/*
+	Eigen::Matrix<double, 7, 1> joint_anlges;
+	joint_anlges << 2.0, 1.0, 0.0, 2.0, 1.0, 0.0, 2.0;
 	// forward kinematics for the right arm
+	kinematic->setPosition(joint_anlges);
+	kinematic->forwardPosition();
+	kinematic->calculateJacobian();
+	std::cout << kinematic->getJacobian() << std::endl;
+	*/
 	kinematic->setPosition(jointAngles);
 	kinematic->forwardPosition();
 	kinematic->calculateJacobian();

@@ -34,7 +34,7 @@ computedPose_left = np.zeros((len(p1[:,0]),6))
 error_left = np.zeros((len(p1[:,0]),6))
 
 kinematic_model_ptr_L = loadKinematicModel("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf")
-kinematic_model_ptr_R = loadKinematicModel("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf")
+#kinematic_model_ptr_R = loadKinematicModel("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf")
 
 
 # loop for the left arm
@@ -61,7 +61,7 @@ error_right = np.zeros((len(p1[:,0]),6))
 jointAngles = np.array([-110.0, 29.85, 35.92, 49.91, 117.0, 123.0, -117.0]) * np.pi/180.0 
 
 # loop for the right arm
-for index, (pos, vel, phi, phi_dot) in enumerate(zip(p2, v2, phi_delta, dphi)): # loop through all the desired position of left arm
+""" for index, (pos, vel, phi, phi_dot) in enumerate(zip(p2, v2, phi_delta, dphi)): # loop through all the desired position of left arm
     desPose = np.concatenate((pos, phi), axis=0) 
     desVelocities = np.concatenate((vel, phi_dot), axis=0) 
     result = gpm(desPose, desVelocities, jointAngles, jointVelocities, kinematic_model_ptr_R)
@@ -71,7 +71,7 @@ for index, (pos, vel, phi, phi_dot) in enumerate(zip(p2, v2, phi_delta, dphi)): 
         jointVelocities = (desJointAngles_left[index, :] - desJointAngles_left[index-1, :])/dt 
     print('\n error', desPose - result[1])
     error_right[index, :] = desPose - result[1]
-    jointAngles = result[0]
+    jointAngles = result[0] """
 
 # see development of joint values
 fig = plt.figure()
