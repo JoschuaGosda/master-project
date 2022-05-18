@@ -5,6 +5,7 @@ import numpy as np
 from abb_egm_pyclient import EGMClient
 from data.get_data import get_desJoints_L, get_desJoints_R, logic2abb
 
+
 '''
 Before running this script make sure that the starting pose of the robot (either real one or in RS) match the
 starting pose of the computed joint angles. This script sends desired joint position to the robot. Note however, that
@@ -20,6 +21,7 @@ rate = 80
 
 egm_client_left = EGMClient(port=UDP_PORT_LEFT)
 egm_client_right = EGMClient(port=UDP_PORT_RIGHT)
+
 
 for n in range(len(comp_conf_left[:,0])):
 

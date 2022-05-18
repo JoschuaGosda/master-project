@@ -11,11 +11,13 @@
 
 
 std::pair<Eigen::Matrix<double, 7, 1>, Eigen::Matrix<double, 6, 1>> gpm(Eigen::Matrix<double, 6, 1> &desPose, Eigen::Matrix<double, 6, 1> &desVelocity, 
-Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelocity, rl::mdl::Kinematic * kinematic) {
+Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelocity, void * kinematic_ptr) {
 
 
 	// FORWARD KINEMATICS
+	rl::mdl::Kinematic* kinematic = (rl::mdl::Kinematic*) kinematic_ptr;
 
+	std::cout << "pointer in gpm" << kinematic_ptr << std::endl;
 	//rl::mdl::Kinematic* kinematic = kinematicPtr;
 
 	// forward kinematics for the right arm

@@ -2,6 +2,7 @@
 #include <pybind11/eigen.h>
 #include "gpm.hpp"
 #include "loadKinematicModel.hpp"
+#include "pointer_example.hpp"
 
 namespace py = pybind11;
 
@@ -14,4 +15,6 @@ PYBIND11_MODULE(invKin, m) {
     // https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies
     m.def("loadKinematicModel", &loadKinematicModel, "Load model from URDF", py::arg("Path to URDF file"), py::return_value_policy::move);
 
+    m.def("set_pointer", &set_pointer, "set pointer", py::arg("pointer"), py::return_value_policy::move);
+    m.def("get_pointer", &get_pointer, py::return_value_policy::move);
 	}

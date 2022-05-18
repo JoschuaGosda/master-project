@@ -1,6 +1,7 @@
 #include <iostream>
 #include "gpm.hpp"
 #include "loadKinematicModel.hpp"
+#include "pointer_example.hpp"
 
 #include <Eigen/Eigen>
 #include <rl/math/Unit.h>
@@ -14,6 +15,9 @@ int main(int, char**) {
 	enum yumi_arm{YUMI_RIGHT, YUMI_LEFT};
 
 	//rl::mdl::Kinematic *kinematic_ptr = loadKinematicModel("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf");
+
+	
+	//std::cout << *((int*)p) << std::endl;
 
 	rl::mdl::UrdfFactory factory;
 	std::shared_ptr<rl::mdl::Model> model(factory.create("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf"));
@@ -41,6 +45,17 @@ int main(int, char**) {
 	
 	std::cout << "desired joint values: \n" << result.first << std::endl;
 	std::cout << "current pose: \n" << result.second << std::endl;
+
+
+
+	int number = 7;
+    int *mypointer = &number;
+	set_pointer(mypointer);
+
+	void * p = get_pointer();
+	set_pointer(p);
+	
+
 	
 	return 0;
 }

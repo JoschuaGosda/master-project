@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 
 import numpy as np
 import copy
-from libs.invKin import gpm
+from libs.invKin import gpm, loadKinematicModel
 
 from data.get_data import get_trajectory, transform2yumi_workspace, place_trajectory, Yumi
 
@@ -33,12 +33,16 @@ desJointAngles_left = np.zeros((len(p1[:,0]),7))
 computedPose_left = np.zeros((len(p1[:,0]),6))
 error_left = np.zeros((len(p1[:,0]),6))
 
+kinematic_model_ptr_L = loadKinematicModel("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf")
+kinematic_model_ptr_R = loadKinematicModel("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf")
+
+
 # loop for the left arm
 for index, (pos, vel, phi, phi_dot) in enumerate(zip(p1, v1, phi_delta, dphi)): # loop through all the desired position of left arm
     desPose = np.concatenate((pos, phi), axis=0) 
     desVelocities = np.concatenate((vel, phi_dot), axis=0) 
     # call the c++ egm function, return joint values and resulting pose
-    result = gpm(desPose, desVelocities, jointAngles, jointVelocities, Yumi.LEFT.value)
+    result = gpm(desPose, desVelocities, jointAngles, jointVelocities, kinematic_model_ptr_L)
     desJointAngles_left[index,:] = result[0] # computed joint values from IK
     computedPose_left[index, :] = result[1] # resulting pose with joint values from IK
     if index > 0:
@@ -60,7 +64,7 @@ jointAngles = np.array([-110.0, 29.85, 35.92, 49.91, 117.0, 123.0, -117.0]) * np
 for index, (pos, vel, phi, phi_dot) in enumerate(zip(p2, v2, phi_delta, dphi)): # loop through all the desired position of left arm
     desPose = np.concatenate((pos, phi), axis=0) 
     desVelocities = np.concatenate((vel, phi_dot), axis=0) 
-    result = gpm(desPose, desVelocities, jointAngles, jointVelocities, Yumi.RIGHT.value)
+    result = gpm(desPose, desVelocities, jointAngles, jointVelocities, kinematic_model_ptr_R)
     desJointAngles_right[index,:] = result[0] 
     computedPose_right[index, :] = result[1] 
     if index > 0:

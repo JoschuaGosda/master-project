@@ -14,7 +14,7 @@ find_package (broccoli 3.0.0 COMPONENTS eigen REQUIRED)
 find_package(RL COMPONENTS MDL REQUIRED)
 
 # dependencies for gpm function
-add_library(my_funcs SHARED src/gpm.cpp src/loadKinematicModel.cpp)
+add_library(my_funcs SHARED src/gpm.cpp src/loadKinematicModel.cpp src/pointer_example.cpp)
 target_link_libraries (
     my_funcs 
     ${RL_LIBRARIES}
@@ -32,7 +32,7 @@ target_link_libraries(
     eat::broccoli
 )
 
-add_executable(myMain src/main.cpp src/gpm.cpp src/loadKinematicModel.cpp)
+add_executable(myMain src/main.cpp src/gpm.cpp src/loadKinematicModel.cpp src/pointer_example.cpp)
 target_link_libraries(
     myMain
     eat::broccoli
