@@ -1,13 +1,23 @@
 #include <iostream>
 #include "gpm.hpp"
+#include "loadKinematicModel.hpp"
 
 #include <Eigen/Eigen>
 #include <rl/math/Unit.h>
+#include <rl/mdl/Kinematic.h>
+#include <rl/mdl/Model.h>
+#include <rl/mdl/UrdfFactory.h>
 
 
 int main(int, char**) {
 
 	enum yumi_arm{YUMI_RIGHT, YUMI_LEFT};
+
+	//rl::mdl::Kinematic *kinematic_ptr = loadKinematicModel("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf");
+
+	rl::mdl::UrdfFactory factory;
+	std::shared_ptr<rl::mdl::Model> model(factory.create("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf"));
+	rl::mdl::Kinematic* kinematic = dynamic_cast<rl::mdl::Kinematic*>(model.get());
 
 	// Is Values
 	Eigen::Matrix<double, 6, 1> actualPosition;
@@ -27,7 +37,7 @@ int main(int, char**) {
 	desVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
 	std::pair<Eigen::Matrix<double, 7, 1>, Eigen::Matrix<double, 6, 1>> result;
-	result = gpm(desPose, desVelocity, jointAngles, jointVelocity, YUMI_RIGHT);
+	result = gpm(desPose, desVelocity, jointAngles, jointVelocity, kinematic);
 	
 	std::cout << "desired joint values: \n" << result.first << std::endl;
 	std::cout << "current pose: \n" << result.second << std::endl;

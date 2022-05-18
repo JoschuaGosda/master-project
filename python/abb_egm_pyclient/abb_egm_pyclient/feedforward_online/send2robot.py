@@ -6,6 +6,7 @@ import numpy as np
 from abb_egm_pyclient import EGMClient
 from data.get_data import get_desJoints_L, get_desJoints_R
 from libs.invKin import gpm
+from libs.invKin import loadKinematicModel
 from data.get_data import get_trajectory, transform2yumi_workspace, place_trajectory, Yumi, logic2abb
 
 '''
@@ -30,6 +31,9 @@ rate = 80
 
 egm_client_L = EGMClient(port=UDP_PORT_LEFT)
 egm_client_R = EGMClient(port=UDP_PORT_RIGHT)
+
+kinematic_model_ptr_L = loadKinematicModel("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf")
+kinematic_model_ptr_R = loadKinematicModel("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf")
 
 jointVelocities_L = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 jointVelocities_R = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -75,8 +79,8 @@ for index, (pos1, vel1, pos2, vel2, phi, phi_dot) in enumerate(zip(p1, v1, p2, v
     ex_time = t3-t2
     print(f'computation time for assembling arrays: {ex_time}')
 
-    ik_jointAngles_L, ik_pose_L = gpm(desPose_L, desVelocities_L, jointAngles_L, jointVelocities_L, Yumi.LEFT.value)
-    ik_jointAngles_R, ik_pose_R = gpm(desPose_R, desVelocities_R, jointAngles_R, jointVelocities_R, Yumi.RIGHT.value)
+    ik_jointAngles_L, ik_pose_L = gpm(desPose_L, desVelocities_L, jointAngles_L, jointVelocities_L, kinematic_model_ptr_L)
+    ik_jointAngles_R, ik_pose_R = gpm(desPose_R, desVelocities_R, jointAngles_R, jointVelocities_R, kinematic_model_ptr_R)
 
     t4 = time.time()
     ex_time = t4-t3

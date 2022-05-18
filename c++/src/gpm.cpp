@@ -11,27 +11,12 @@
 
 
 std::pair<Eigen::Matrix<double, 7, 1>, Eigen::Matrix<double, 6, 1>> gpm(Eigen::Matrix<double, 6, 1> &desPose, Eigen::Matrix<double, 6, 1> &desVelocity, 
-Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelocity, const bool left_arm) {
+Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelocity, rl::mdl::Kinematic * kinematic) {
+
 
 	// FORWARD KINEMATICS
-	rl::mdl::UrdfFactory factory;
-	std::string path2urdf;
 
-	const clock_t t0 = clock();
-
-
-	if(left_arm){
-		path2urdf = "/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf";
-	} else{
-		path2urdf = "/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf";
-	}
-
-	std::shared_ptr<rl::mdl::Model> model(factory.create(path2urdf));
-
-	rl::mdl::Kinematic* kinematic = dynamic_cast<rl::mdl::Kinematic*>(model.get());
-
-	const clock_t t1 = clock();
-	std::cout << "time for parsing model: \t" << t1-t0 << std::endl;
+	//rl::mdl::Kinematic* kinematic = kinematicPtr;
 
 	// forward kinematics for the right arm
 	kinematic->setPosition(jointAngles);
@@ -47,7 +32,6 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	}
 
 	const clock_t t2 = clock();
-	std::cout << "time for copy jacobi: \t" << t2-t1 << std::endl;
 
 	// check if matrices are the same
 	//std::cout << "RLJacobian \n" << kinematic->getJacobian() << std::endl;
