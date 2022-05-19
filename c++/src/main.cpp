@@ -24,7 +24,7 @@ int main(int, char**) {
 	rl::mdl::Kinematic* kinematic = dynamic_cast<rl::mdl::Kinematic*>(model.get());
 
 	Arm right_arm("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf");
-	void* test_pointer = right_arm.get_pointer2arm();
+	std::shared_ptr<rl::mdl::Model> abc = right_arm.get_pointer2arm();
 
 	// Is Values
 	Eigen::Matrix<double, 6, 1> actualPosition;
@@ -44,7 +44,7 @@ int main(int, char**) {
 	desVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
 	std::pair<Eigen::Matrix<double, 7, 1>, Eigen::Matrix<double, 6, 1>> result;
-	result = gpm(desPose, desVelocity, jointAngles, jointVelocity, test_pointer);
+	result = gpm(desPose, desVelocity, jointAngles, jointVelocity, abc);
 	
 	std::cout << "desired joint values: \n" << result.first << std::endl;
 	std::cout << "current pose: \n" << result.second << std::endl;

@@ -4,10 +4,9 @@ class Arm {
     public:
     Arm(std::string path);
 
-    void* get_pointer2arm();
+    std::shared_ptr<rl::mdl::Model> get_pointer2arm();
 
     private:
-    rl::mdl::Kinematic* kin_pointer;
-    rl::mdl::Kinematic kin_model;
-    void* void_pointer;
+    //rl::mdl::Kinematic kin_model;
+    std::shared_ptr<rl::mdl::Model> model;
  };
