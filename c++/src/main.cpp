@@ -1,7 +1,7 @@
 #include <iostream>
 #include "gpm.hpp"
 #include "loadKinematicModel.hpp"
-#include "pointer_example.hpp"
+#include "yumi.hpp"
 
 #include <Eigen/Eigen>
 #include <rl/math/Unit.h>
@@ -12,19 +12,27 @@
 
 int main(int, char**) {
 
-	enum yumi_arm{YUMI_RIGHT, YUMI_LEFT};
+	std::string path2yumi_l = "/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf";
+	Yumi yumi_l(path2yumi_l);
 
-	//rl::mdl::Kinematic *kinematic_ptr = loadKinematicModel("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf");
+	Eigen::Matrix<double, 7, 1> jointAngles;
+	jointAngles << 90.48, 17.87, -25.0, 48.0, -137.0, 122.0, -74.21;
+	jointAngles *= rl::math::DEG2RAD;
 
-	
-	//std::cout << *((int*)p) << std::endl;
+	Eigen::Matrix<double, 7, 1> jointVelocities;
+	jointVelocities << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
-	rl::mdl::UrdfFactory factory;
+	yumi_l.set_jointValues(jointAngles, jointVelocities);
+	yumi_l.print_pose();
+
+
+
+	//enum yumi_arm{YUMI_RIGHT, YUMI_LEFT};
+
+
+/* 	rl::mdl::UrdfFactory factory;
 	std::shared_ptr<rl::mdl::Model> model(factory.create("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf"));
 	rl::mdl::Kinematic* kinematic = dynamic_cast<rl::mdl::Kinematic*>(model.get());
-
-	Arm right_arm("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf");
-	void* test_pointer = right_arm.get_pointer2arm();
 
 	// Is Values
 	Eigen::Matrix<double, 6, 1> actualPosition;
@@ -44,21 +52,10 @@ int main(int, char**) {
 	desVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
 	std::pair<Eigen::Matrix<double, 7, 1>, Eigen::Matrix<double, 6, 1>> result;
-	result = gpm(desPose, desVelocity, jointAngles, jointVelocity, test_pointer);
+	result = gpm(desPose, desVelocity, jointAngles, jointVelocity, kinematic);
 	
 	std::cout << "desired joint values: \n" << result.first << std::endl;
-	std::cout << "current pose: \n" << result.second << std::endl;
-
-
-
-	int number = 7;
-    int *mypointer = &number;
-	set_pointer(mypointer);
-
-	void * p = get_pointer();
-	set_pointer(p);
-	
-
+	std::cout << "current pose: \n" << result.second << std::endl; */
 	
 	return 0;
 }

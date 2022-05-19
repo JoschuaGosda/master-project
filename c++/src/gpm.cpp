@@ -1,5 +1,4 @@
 #include <iostream>
-#include <string>
 
 #include <broccoli/control/kinematics/ComfortPoseGradient.hpp>
 #include <broccoli/core/math.hpp>
@@ -11,17 +10,11 @@
 
 
 std::pair<Eigen::Matrix<double, 7, 1>, Eigen::Matrix<double, 6, 1>> gpm(Eigen::Matrix<double, 6, 1> &desPose, Eigen::Matrix<double, 6, 1> &desVelocity, 
-Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelocity, void * kinematic_ptr) {
+Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelocity, rl::mdl::Kinematic* kinematic) {
+
 
 
 	// FORWARD KINEMATICS
-	rl::mdl::Kinematic* kinematic = (rl::mdl::Kinematic*) kinematic_ptr;
-	std::cout << "adress of pointer gpm " << kinematic_ptr << std::endl;
-	
-
-	//std::cout << "pointer in gpm" << kinematic_ptr << std::endl;
-	//rl::mdl::Kinematic* kinematic = kinematicPtr;
-
 	kinematic->setPosition(jointAngles);
 	kinematic->forwardPosition();
 	kinematic->calculateJacobian();
@@ -33,20 +26,12 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 			J(j, i) = kinematic->getJacobian()(j, i);
 		}
 	}
-
-
-	// check if matrices are the same
-	//std::cout << "RLJacobian \n" << kinematic->getJacobian() << std::endl;
-	//std::cout << "myJacobian \n" << J << std::endl;
-	//std::cout << "Manipulability meassure \n" << kinematic->calculateManipulabilityMeasure() << std::endl;
 	
 	// extract orientation and position for the right arm
 	rl::math::Transform t = kinematic->getOperationalPosition(0);
 	rl::math::Vector3 position = t.translation();
 	rl::math::Vector3 orientation = t.rotation().eulerAngles(2, 1, 0).reverse();
-	//std::cout << "Joint configuration in degrees: " << jointAngles.transpose() * rl::math::RAD2DEG << std::endl;
-	//std::cout << "FK end-effector position: [m] " << position.transpose() << " orientation [deg] " << orientation.transpose() * rl::math::RAD2DEG << std::endl;
-	
+
 	// INVERSE KINEMATICS
 	// compute translation and orientation error
 	Eigen::Matrix3d desOrientation;
@@ -55,17 +40,6 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 					*Eigen::AngleAxisd(desPose(4), Eigen::Vector3d::UnitY())
 					*Eigen::AngleAxisd(desPose(3), Eigen::Vector3d::UnitX());
 					
-	//std::cout << "reverse euler angles" << desOrientation.eulerAngles(2, 1, 0).reverse();
-
-	//  check if these two rotation matrices match!
-	//std::cout << "desOrientation \n" << desOrientation << std::endl;
-	//std::cout << "RL Orientation \n" << t.rotation() << std::endl;
-
-	//Eigen::Vector3d einheitsvektor;
-	//einheitsvektor << 1.0, 0.0, 0.0;
-	//std::cout << "desOrientation x einheitsvektor \n" << desOrientation* einheitsvektor << std::endl;
-	//std::cout << "RL Orientation x einheitsvektor\n" << t.rotation()*einheitsvektor << std::endl;
-
 
 	// define Quaternion with coefficients in the order [x, y, z, w] 
 	Eigen::Vector3d desiredTranslation = desPose.head(3);
@@ -94,9 +68,6 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 										+ desVelocity.head(3);
 	effectiveTaskSpaceInput.tail(3) = gainDriftCompensation/dt * errorRotationInWorldFrame + desVelocity.tail(3);
 	//std::cout << "effectiveTaskSpaceInput: " << effectiveTaskSpaceInput << std::endl;
-
-
-
 
 	// COMPUTE CPG GRADIENT
 	// define min and max values for the joints of Yumi
@@ -146,8 +117,6 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	Eigen::Matrix<double, 7, 1> nullSpaceGradient = Eigen::Matrix<double, 7, 1>::Zero();
 	nullSpaceGradient = 0*manipGradient + 0*cpgGradient;
 
-
-
 	// ASC desired effective velocity does not work -> implement myself
 	Eigen::Matrix<double, 7, 7>  m_inverseWeighing = Eigen::Matrix<double, 7, 7> ::Identity();
 	double m_activationFactorTaskSpace = 1.0;
@@ -160,11 +129,6 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	Eigen::Matrix<double, 7, 1> jointAnglesDelta;
 	jointAnglesDelta << jointVelocities * dt;
 
-
-	//std::cout << "current qs in DEG \n" << jointAngles* rl::math::RAD2DEG << std::endl;
-	//std::cout << "delta qs in DEG \n" << jointAnglesDelta * rl::math::RAD2DEG << std::endl;
-	//std::cout << "next qs in DEG \n" << (jointAngles+jointAnglesDelta)* rl::math::RAD2DEG << std::endl;
-
 	// forward kinematics with the new joints values from IK
 	kinematic->setPosition(jointAngles+jointAnglesDelta);
 	kinematic->forwardPosition();
@@ -172,9 +136,6 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	rl::math::Transform dest = kinematic->getOperationalPosition(0);
 	rl::math::Vector3 dposition = dest.translation();
 	rl::math::Vector3 dorientation = dest.rotation().eulerAngles(2, 1, 0).reverse();
-	//std::cout << "IK joint configuration in degrees: " << (jointAngles+jointAnglesDelta).transpose() * rl::math::RAD2DEG << std::endl;
-	//std::cout << "IK end-effector position: [m] " << dposition.transpose() << " orientation [deg] " << dorientation.transpose() * rl::math::RAD2DEG << std::endl;
-	
 	Eigen::Matrix<double, 6, 1> resPose;
 	resPose << dposition.transpose()(0), dposition.transpose()(1), dposition.transpose()(2), dorientation.transpose()(0), dorientation.transpose()(1), dorientation.transpose()(2);
 
