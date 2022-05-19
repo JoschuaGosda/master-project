@@ -1,6 +1,4 @@
 #include <iostream>
-#include "gpm.hpp"
-#include "loadKinematicModel.hpp"
 #include "yumi.hpp"
 
 #include <Eigen/Eigen>
@@ -23,7 +21,24 @@ int main(int, char**) {
 	jointVelocities << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
 	yumi_l.set_jointValues(jointAngles, jointVelocities);
-	yumi_l.print_pose();
+
+
+	// Desired Values
+	Eigen::Matrix<double, 6, 1> desPose;
+	desPose << 0.300, 0.200, 0.200, 0.0*rl::math::DEG2RAD, 0.0*rl::math::DEG2RAD, 0.0*rl::math::DEG2RAD; // obtained from RS with stated joint values
+	Eigen::Matrix<double, 6, 1> desVelocity;
+	desVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+
+	yumi_l.set_desPoseVel(desPose, desVelocity);
+
+	yumi_l.process();
+
+
+	Eigen::Matrix<double, 7, 1> newJointValues;
+	newJointValues = yumi_l.get_newJointValues();
+
+	std::cout << "old joint values:  " << jointAngles << std::endl;
+	std::cout << "new joint values:  " << newJointValues << std::endl;
 
 
 
