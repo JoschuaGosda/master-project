@@ -16,20 +16,12 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 
 	// FORWARD KINEMATICS
 	rl::mdl::Kinematic* kinematic = (rl::mdl::Kinematic*) kinematic_ptr;
+	std::cout << "adress of pointer gpm " << kinematic_ptr << std::endl;
 	
 
-	std::cout << "pointer in gpm" << kinematic_ptr << std::endl;
+	//std::cout << "pointer in gpm" << kinematic_ptr << std::endl;
 	//rl::mdl::Kinematic* kinematic = kinematicPtr;
 
-	/*
-	Eigen::Matrix<double, 7, 1> joint_anlges;
-	joint_anlges << 2.0, 1.0, 0.0, 2.0, 1.0, 0.0, 2.0;
-	// forward kinematics for the right arm
-	kinematic->setPosition(joint_anlges);
-	kinematic->forwardPosition();
-	kinematic->calculateJacobian();
-	std::cout << kinematic->getJacobian() << std::endl;
-	*/
 	kinematic->setPosition(jointAngles);
 	kinematic->forwardPosition();
 	kinematic->calculateJacobian();
@@ -42,7 +34,6 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 		}
 	}
 
-	const clock_t t2 = clock();
 
 	// check if matrices are the same
 	//std::cout << "RLJacobian \n" << kinematic->getJacobian() << std::endl;
@@ -53,11 +44,9 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	rl::math::Transform t = kinematic->getOperationalPosition(0);
 	rl::math::Vector3 position = t.translation();
 	rl::math::Vector3 orientation = t.rotation().eulerAngles(2, 1, 0).reverse();
-	std::cout << "Joint configuration in degrees: " << jointAngles.transpose() * rl::math::RAD2DEG << std::endl;
-	std::cout << "FK end-effector position: [m] " << position.transpose() << " orientation [deg] " << orientation.transpose() * rl::math::RAD2DEG << std::endl;
+	//std::cout << "Joint configuration in degrees: " << jointAngles.transpose() * rl::math::RAD2DEG << std::endl;
+	//std::cout << "FK end-effector position: [m] " << position.transpose() << " orientation [deg] " << orientation.transpose() * rl::math::RAD2DEG << std::endl;
 	
-	const clock_t t3 = clock(); 
-	std::cout << "time for extracting & printing: \t" << t3-t2 << std::endl;
 	// INVERSE KINEMATICS
 	// compute translation and orientation error
 	Eigen::Matrix3d desOrientation;
@@ -104,11 +93,10 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	effectiveTaskSpaceInput.head(3) = gainDriftCompensation/dt * (desiredTranslation - currentTranslation)
 										+ desVelocity.head(3);
 	effectiveTaskSpaceInput.tail(3) = gainDriftCompensation/dt * errorRotationInWorldFrame + desVelocity.tail(3);
-	std::cout << "effectiveTaskSpaceInput: " << effectiveTaskSpaceInput << std::endl;
+	//std::cout << "effectiveTaskSpaceInput: " << effectiveTaskSpaceInput << std::endl;
 
 
-	const clock_t t4 = clock();
-	std::cout << "time for taskspace input: \t" << t4-t3 << std::endl;
+
 
 	// COMPUTE CPG GRADIENT
 	// define min and max values for the joints of Yumi
@@ -158,9 +146,6 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	Eigen::Matrix<double, 7, 1> nullSpaceGradient = Eigen::Matrix<double, 7, 1>::Zero();
 	nullSpaceGradient = 0*manipGradient + 0*cpgGradient;
 
-	const clock_t t5 = clock();
-	std::cout << "time for gradients: \t" << t5-t4 << std::endl;
-	//std::cout << "gradient \n" << nullSpaceGradient << std::endl;
 
 
 	// ASC desired effective velocity does not work -> implement myself
@@ -169,14 +154,12 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	Eigen::Matrix<double, 7, 1> nullSpaceVelocity = -m_inverseWeighing * nullSpaceGradient;
 	Eigen::Matrix<double, 7, 1> jointVelocities;
 	jointVelocities = broccoli::core::math::solvePseudoInverseEquation(J, m_inverseWeighing, effectiveTaskSpaceInput, nullSpaceVelocity, m_activationFactorTaskSpace);
-	std::cout << "resulting jointVelocities: \n" << jointVelocities << std::endl;
+	//std::cout << "resulting jointVelocities: \n" << jointVelocities << std::endl;
 
 	// perform integration over one timestep to obtain positions that can be send to robot
 	Eigen::Matrix<double, 7, 1> jointAnglesDelta;
 	jointAnglesDelta << jointVelocities * dt;
 
-	const clock_t t6 = clock();
-	std::cout << "time for pseudo: \t" << t6-t5 << std::endl;
 
 	//std::cout << "current qs in DEG \n" << jointAngles* rl::math::RAD2DEG << std::endl;
 	//std::cout << "delta qs in DEG \n" << jointAnglesDelta * rl::math::RAD2DEG << std::endl;
@@ -189,8 +172,8 @@ Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelo
 	rl::math::Transform dest = kinematic->getOperationalPosition(0);
 	rl::math::Vector3 dposition = dest.translation();
 	rl::math::Vector3 dorientation = dest.rotation().eulerAngles(2, 1, 0).reverse();
-	std::cout << "IK joint configuration in degrees: " << (jointAngles+jointAnglesDelta).transpose() * rl::math::RAD2DEG << std::endl;
-	std::cout << "IK end-effector position: [m] " << dposition.transpose() << " orientation [deg] " << dorientation.transpose() * rl::math::RAD2DEG << std::endl;
+	//std::cout << "IK joint configuration in degrees: " << (jointAngles+jointAnglesDelta).transpose() * rl::math::RAD2DEG << std::endl;
+	//std::cout << "IK end-effector position: [m] " << dposition.transpose() << " orientation [deg] " << dorientation.transpose() * rl::math::RAD2DEG << std::endl;
 	
 	Eigen::Matrix<double, 6, 1> resPose;
 	resPose << dposition.transpose()(0), dposition.transpose()(1), dposition.transpose()(2), dorientation.transpose()(0), dorientation.transpose()(1), dorientation.transpose()(2);
