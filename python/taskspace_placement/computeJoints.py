@@ -4,7 +4,8 @@ from matplotlib import pyplot as plt
 
 import numpy as np
 import copy
-from libs.invKin import *
+import libs.invKin_R as invKin_R
+import libs.invKin_L as invKin_L
 
 from data.get_data import get_trajectory, transform2yumi_workspace, place_trajectory, Yumi
 
@@ -33,18 +34,18 @@ desJointAngles_left = np.zeros((len(p1[:,0]),7))
 computedPose_left = np.zeros((len(p1[:,0]),6))
 error_left = np.zeros((len(p1[:,0]),6))
 
-left_arm = Arm("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf")
+left_arm = invKin_L.Arm_L("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf")
 left_arm_p = left_arm.get_pointer2arm()
 
-right_arm = Arm("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf")
-right_arm_p = right_arm.get_pointer2arm()
+#right_arm = invKin_R.Arm_R("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf")
+#right_arm_p = right_arm.get_pointer2arm()
 
 # loop for the left arm
 for index, (pos, vel, phi, phi_dot) in enumerate(zip(p1, v1, phi_delta, dphi)): # loop through all the desired position of left arm
     desPose = np.concatenate((pos, phi), axis=0) 
     desVelocities = np.concatenate((vel, phi_dot), axis=0) 
     # call the c++ egm function, return joint values and resulting pose
-    result = gpm(desPose, desVelocities, jointAngles, jointVelocities, left_arm_p)
+    result = invKin_L.gpm(desPose, desVelocities, jointAngles, jointVelocities, left_arm_p)
     desJointAngles_left[index,:] = result[0] # computed joint values from IK
     computedPose_left[index, :] = result[1] # resulting pose with joint values from IK
     if index > 0:
@@ -64,10 +65,10 @@ error_right = np.zeros((len(p1[:,0]),6))
 jointAngles = np.array([-110.0, 29.85, 35.92, 49.91, 117.0, 123.0, -117.0]) * np.pi/180.0 
 
 # loop for the right arm
-for index, (pos, vel, phi, phi_dot) in enumerate(zip(p2, v2, phi_delta, dphi)): # loop through all the desired position of left arm
+""" for index, (pos, vel, phi, phi_dot) in enumerate(zip(p2, v2, phi_delta, dphi)): # loop through all the desired position of left arm
     desPose = np.concatenate((pos, phi), axis=0) 
     desVelocities = np.concatenate((vel, phi_dot), axis=0) 
-    result = gpm(desPose, desVelocities, jointAngles, jointVelocities, right_arm_p)
+    result = invKin_R.gpm(desPose, desVelocities, jointAngles, jointVelocities, right_arm_p)
     desJointAngles_right[index,:] = result[0] 
     computedPose_right[index, :] = result[1] 
     if index > 0:
@@ -75,7 +76,7 @@ for index, (pos, vel, phi, phi_dot) in enumerate(zip(p2, v2, phi_delta, dphi)): 
     print('\n error', desPose - result[1])
     error_right[index, :] = desPose - result[1]
     jointAngles = result[0]  
-
+ """
 # see development of joint values
 fig = plt.figure()
 plt.plot(desJointAngles_left[:,0], label='joint1')

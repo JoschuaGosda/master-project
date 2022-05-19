@@ -24,13 +24,22 @@ target_link_libraries (
 
 # dependencies for pybind11
 add_subdirectory(deps/pybind11) # include pybind11 as a submodule
-pybind11_add_module(invKin src/py2gpmbind.cpp)
+pybind11_add_module(invKin_R src/py2gpmbind.cpp)
 target_link_libraries(
-    invKin PUBLIC 
+    invKin_R PUBLIC 
     my_funcs
     ${RL_LIBRARIES}
     eat::broccoli
 )
+
+pybind11_add_module(invKin_L src/py2gpmbind.cpp)
+target_link_libraries(
+    invKin_L PUBLIC 
+    my_funcs
+    ${RL_LIBRARIES}
+    eat::broccoli
+)
+
 
 add_executable(myMain src/main.cpp src/gpm.cpp src/loadKinematicModel.cpp src/pointer_example.cpp)
 target_link_libraries(

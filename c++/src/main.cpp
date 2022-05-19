@@ -23,7 +23,7 @@ int main(int, char**) {
 	std::shared_ptr<rl::mdl::Model> model(factory.create("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf"));
 	rl::mdl::Kinematic* kinematic = dynamic_cast<rl::mdl::Kinematic*>(model.get());
 
-	Arm right_arm("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf");
+	Arm_R right_arm("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf");
 	void* test_pointer = right_arm.get_pointer2arm();
 
 	// Is Values
