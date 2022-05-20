@@ -10,6 +10,8 @@
 #include <rl/mdl/Model.h>
 #include <rl/mdl/UrdfFactory.h>
 
+
+
 class Yumi {
     public:
 
@@ -31,8 +33,10 @@ class Yumi {
 
     private:
     // vars for rl library
-    rl::mdl::Kinematic* m_kinematic;
-    rl::mdl::Kinematic m_kin_model;
+    std::shared_ptr<rl::mdl::Model> m_model;
+    //rl::mdl::Model m_modelObj;
+    //rl::mdl::Kinematic* m_kinematic;
+    //rl::mdl::Kinematic m_kin_model;
 
     // vars for tuning
     double m_driftCompGain = 1.0;
@@ -50,6 +54,8 @@ class Yumi {
 
     rl::math::Vector3 m_position = rl::math::Vector3::Zero();
 	rl::math::Vector3 m_orientation = rl::math::Vector3::Zero(); //Euler ZYX convention
+
+    Eigen::Matrix<double, 6, 7> m_jacobian = Eigen::Matrix<double, 6, 7>::Zero();
 
     Eigen::Matrix<double, 6, 1> m_effectiveTaskSpaceInput = Eigen::Matrix<double, 6, 1>::Zero();
 

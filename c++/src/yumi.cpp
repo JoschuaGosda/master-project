@@ -13,10 +13,8 @@
 // constructor
 Yumi::Yumi(std::string path){
     rl::mdl::UrdfFactory factory;
-    std::shared_ptr<rl::mdl::Model> model(factory.create(path));
-    rl::mdl::Kinematic* kinematic = dynamic_cast<rl::mdl::Kinematic*>(model.get());
-    m_kin_model = *(kinematic);
-    m_kinematic = &m_kin_model;
+    m_model = (std::shared_ptr<rl::mdl::Model>)(factory.create(path));
+    //m_modelObj= *m_model;
 }
 
 void Yumi::set_jointValues(Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matrix<double, 7, 1> &jointVelocity){
@@ -25,12 +23,14 @@ void Yumi::set_jointValues(Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matr
 }
 
 void Yumi::doForwardKinematics(){
-    m_kinematic->setPosition(m_jointAngles);
-    m_kinematic->forwardPosition();
-    m_kinematic->calculateJacobian();
-    rl::math::Transform t = m_kinematic->getOperationalPosition(0);
+    rl::mdl::Kinematic* kinematic = dynamic_cast<rl::mdl::Kinematic*>(m_model.get());
+    kinematic->setPosition(m_jointAngles);
+    kinematic->forwardPosition();
+    kinematic->calculateJacobian();
+    rl::math::Transform t = kinematic->getOperationalPosition(0);
 	m_position = t.translation();
 	m_orientation = t.rotation().eulerAngles(2, 1, 0).reverse();
+    m_jacobian = kinematic->getJacobian();
 }
 
 void Yumi::print_pose(){
@@ -89,7 +89,8 @@ void Yumi::process(){
 
     Eigen::Matrix<double, 7, 1> jointVelocities;
     Eigen::Matrix<double, 7, 1> nullSpaceVelocity = -m_inverseWeighing * m_nullSpaceGradient;
-	jointVelocities = broccoli::core::math::solvePseudoInverseEquation((&m_kin_model)->getJacobian(), m_inverseWeighing, m_effectiveTaskSpaceInput,
+
+	jointVelocities = broccoli::core::math::solvePseudoInverseEquation(m_jacobian, m_inverseWeighing, m_effectiveTaskSpaceInput,
                      nullSpaceVelocity, m_activationFactorTaskSpace);
 
 	m_jointAnglesDelta << jointVelocities * m_sampleTime;
