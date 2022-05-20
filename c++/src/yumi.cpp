@@ -24,17 +24,17 @@ void Yumi::set_jointValues(Eigen::Matrix<double, 7, 1> &jointAngles, Eigen::Matr
     m_jointVelocity = jointVelocity;
 }
 
-void Yumi::doForwardKinematics(rl::mdl::Kinematic* kinematic){
-    kinematic->setPosition(m_jointAngles);
-    kinematic->forwardPosition();
-    kinematic->calculateJacobian();
-    rl::math::Transform t = kinematic->getOperationalPosition(0);
+void Yumi::doForwardKinematics(){
+    m_kinematic->setPosition(m_jointAngles);
+    m_kinematic->forwardPosition();
+    m_kinematic->calculateJacobian();
+    rl::math::Transform t = m_kinematic->getOperationalPosition(0);
 	m_position = t.translation();
 	m_orientation = t.rotation().eulerAngles(2, 1, 0).reverse();
 }
 
 void Yumi::print_pose(){
-    Yumi::doForwardKinematics(&m_kin_model);
+    doForwardKinematics();
     std::cout << "pose " << m_position << "\n" << m_orientation << std::endl;
 }
 
@@ -84,7 +84,7 @@ void Yumi::compTaskSpaceInput(){
 
 void Yumi::process(){
 
-    doForwardKinematics(&m_kin_model);
+    doForwardKinematics();
     compTaskSpaceInput();
 
     Eigen::Matrix<double, 7, 1> jointVelocities;
@@ -102,7 +102,7 @@ Eigen::Matrix<double, 7, 1> Yumi::get_newJointValues(){
 }
 
 Eigen::Matrix<double, 6, 1> Yumi::get_newPose(){
-    doForwardKinematics(&m_kin_model);
+    doForwardKinematics();
     Eigen::Matrix<double, 6, 1> pose;
     pose << m_position, m_orientation;
     return pose;

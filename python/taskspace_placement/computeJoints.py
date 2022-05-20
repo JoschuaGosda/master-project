@@ -64,7 +64,7 @@ error_right = np.zeros((len(p1[:,0]),6))
 jointAngles = np.array([-110.0, 29.85, 35.92, 49.91, 117.0, 123.0, -117.0]) * np.pi/180.0 
 
 # loop for the right arm
-""" for index, (pos, vel, phi, phi_dot) in enumerate(zip(p2, v2, phi_delta, dphi)): # loop through all the desired position of left arm
+for index, (pos, vel, phi, phi_dot) in enumerate(zip(p2, v2, phi_delta, dphi)): # loop through all the desired position of left arm
     desPose = np.concatenate((pos, phi), axis=0) 
     desVelocities = np.concatenate((vel, phi_dot), axis=0) 
     yumi_right.set_jointValues(jointAngles, jointVelocities)
@@ -77,7 +77,7 @@ jointAngles = np.array([-110.0, 29.85, 35.92, 49.91, 117.0, 123.0, -117.0]) * np
     if index > 0:
         jointVelocities = (compJointAngles_left[index, :] - compJointAngles_left[index-1, :])/dt 
     error_right[index, :] = desPose - computedPose_right[index, :]
-    jointAngles = compJointAngles_right[index,:]  """
+    jointAngles = compJointAngles_right[index,:]  
 
 # see development of joint values
 fig = plt.figure()

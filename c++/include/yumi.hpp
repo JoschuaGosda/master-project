@@ -59,7 +59,7 @@ class Yumi {
     Eigen::Matrix<double, 7, 1> m_jointAnglesDelta;
 
     // private functions
-    void doForwardKinematics(rl::mdl::Kinematic* kinematic);
+    void doForwardKinematics();
     Eigen::Matrix3d euler2rotMatrix(rl::math::Vector3 orientation);
     void compTaskSpaceInput();
 
