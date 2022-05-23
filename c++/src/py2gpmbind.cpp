@@ -17,5 +17,8 @@ PYBIND11_MODULE(invKin, m) {
        .def("process", &Yumi::process)
        .def("get_newJointValues", &Yumi::get_newJointValues, py::return_value_policy::copy)
        .def("get_newPose", &Yumi::get_newPose, py::return_value_policy::copy)
-       .def("printPose", &Yumi::print_pose); 
+       .def("printPose", &Yumi::print_pose)
+       .def("set_kp", &Yumi::set_kp)
+       .def("set_operationPoint", &Yumi::set_operationPoint)
+       .def("set_force", &Yumi::set_force);
 	}

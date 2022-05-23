@@ -30,6 +30,7 @@ void Yumi::doForwardKinematics(){
     rl::math::Transform t = kinematic->getOperationalPosition(0);
 	m_position = t.translation();
 	m_orientation = t.rotation().eulerAngles(2, 1, 0).reverse();
+    m_rotationMatrix = t.rotation(); // rotation from world frame to ee frame
     m_jacobian = kinematic->getJacobian();
 }
 
@@ -77,7 +78,7 @@ void Yumi::compTaskSpaceInput(){
 	Eigen::Vector3d errorRotationInWorldFrame = currentOrientation * errorQuaternion.vec();
 
     m_effectiveTaskSpaceInput.head(3) = m_driftCompGain/m_sampleTime * (m_desPosition - m_position)
-										+ m_desPositionDot;
+										+ m_desPositionDot + m_forceTaskSpaceInput;
 	m_effectiveTaskSpaceInput.tail(3) = m_driftCompGain/m_sampleTime * errorRotationInWorldFrame + m_desOrientationDot;
 
 }
@@ -85,6 +86,7 @@ void Yumi::compTaskSpaceInput(){
 void Yumi::process(){
 
     doForwardKinematics();
+    compForce2VelocityController();
     compTaskSpaceInput();
 
     Eigen::Matrix<double, 7, 1> jointVelocities;
@@ -107,4 +109,26 @@ Eigen::Matrix<double, 6, 1> Yumi::get_newPose(){
     Eigen::Matrix<double, 6, 1> pose;
     pose << m_position, m_orientation;
     return pose;
+}
+
+void Yumi::set_force(double force){
+    m_force = force;
+}
+
+void Yumi::compForce2VelocityController(){
+    Eigen::Vector3d velocityEE;
+    // for a postive force outcome the ee of the right arm should move in postive y direction, 
+    // have a look at chosen ee frame in RS
+    velocityEE << 0, m_force-m_forceOP, 0;
+    velocityEE *= m_kp;
+    // transform the velocities computed in the ee frame to the world frame
+    m_forceTaskSpaceInput = m_rotationMatrix.transpose() * velocityEE;
+}
+
+void Yumi::set_kp(double kp){
+    m_kp = kp;
+}
+
+void Yumi::set_operationPoint(double op){
+    m_forceOP = op;
 }
