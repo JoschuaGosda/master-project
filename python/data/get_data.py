@@ -18,14 +18,14 @@ def get_trajectory():
 
 def get_desJoints_L():
     try:
-        comp_conf_left = np.load('data/desJointAngles_left.npy')
+        comp_conf_left = np.load('data/compJointAngles_left.npy')
     except:
         print('It seems like you need to run the script first that generate the requested data')
     return comp_conf_left
 
 def get_desJoints_R():
     try:
-        comp_conf_right = np.load('data/desJointAngles_right.npy')
+        comp_conf_right = np.load('data/compJointAngles_right.npy')
     except:
         print('It seems like you need to run the script first that generate the requested data')
     return comp_conf_right
@@ -51,7 +51,3 @@ def place_trajectory(start_des, p1, p2):
 # rearrange the logic joint values to the strange convention abb has
 def logic2abb(joint_values):
     return joint_values[[0, 1, 3, 4, 5, 6, 2]]
-
-class Yumi(Enum):
-    RIGHT = False
-    LEFT = True
