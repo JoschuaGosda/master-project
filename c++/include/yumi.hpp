@@ -25,6 +25,7 @@ class Yumi {
     void set_force(double force);
     void set_kp(double kp);
     void set_operationPoint(double op);
+    void set_hybridControl(bool hybridControl);
 
     void process();
 
@@ -37,6 +38,9 @@ class Yumi {
     private:
     // vars for rl library
     std::shared_ptr<rl::mdl::Model> m_model;
+
+    // flag for hybrid control
+    bool m_hybridControl = false; 
 
     // vars for tuning
     double m_driftCompGain = 1.0;
@@ -68,10 +72,12 @@ class Yumi {
     Eigen::Matrix<double, 6, 1> m_effectiveTaskSpaceInput = Eigen::Matrix<double, 6, 1>::Zero();
     Eigen::Matrix<double, 3, 1> m_forceTaskSpaceInput = Eigen::Matrix<double, 3, 1>::Zero(); // only apply translational changes
 
-    Eigen::Matrix<double, 7, 7>  m_inverseWeighing = Eigen::Matrix<double, 7, 7> ::Identity();
+    Eigen::Matrix<double, 7, 7>  m_inverseWeighing = Eigen::Matrix<double, 7, 7>::Identity();
     Eigen::Matrix<double, 7, 1> m_nullSpaceGradient = Eigen::Matrix<double, 7, 1>::Zero();
 
     Eigen::Matrix<double, 7, 1> m_jointAnglesDelta;
+
+    Eigen::Matrix3d m_selectVelMatrix = Eigen::Matrix3d::Identity();
 
     // private functions
     void doForwardKinematics();

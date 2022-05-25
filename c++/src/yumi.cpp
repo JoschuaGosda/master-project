@@ -77,6 +77,9 @@ void Yumi::compTaskSpaceInput(){
 	Eigen::Quaterniond errorQuaternion = currentOrientation.inverse() * desiredOrientation;
 	Eigen::Vector3d errorRotationInWorldFrame = currentOrientation * errorQuaternion.vec();
 
+    m_desPosition = m_selectVelMatrix * m_desPosition + (Eigen::Matrix3d::Identity() - m_selectVelMatrix) * m_position;
+    m_desPositionDot = m_selectVelMatrix * m_desPositionDot;
+
     m_effectiveTaskSpaceInput.head(3) = m_driftCompGain/m_sampleTime * (m_desPosition - m_position)
 										+ m_desPositionDot + m_forceTaskSpaceInput;
 	m_effectiveTaskSpaceInput.tail(3) = m_driftCompGain/m_sampleTime * errorRotationInWorldFrame + m_desOrientationDot;
@@ -112,7 +115,9 @@ Eigen::Matrix<double, 6, 1> Yumi::get_newPose(){
 }
 
 void Yumi::set_force(double force){
-    m_force = force;
+    if (m_hybridControl){
+        m_force = force;
+    }
 }
 
 void Yumi::compForce2VelocityController(){
@@ -131,4 +136,19 @@ void Yumi::set_kp(double kp){
 
 void Yumi::set_operationPoint(double op){
     m_forceOP = op;
+}
+
+void Yumi::set_hybridControl(bool hybridControl){
+    if (hybridControl != m_hybridControl){
+        m_hybridControl = hybridControl;
+        if (hybridControl){
+            m_selectVelMatrix <<    1, 0, 0,    // y direction is force controlled in this case
+                                    0, 0, 0, 
+                                    0, 0, 1;
+                                    
+        } else {
+            m_selectVelMatrix = Eigen::Matrix3d::Identity();
+        }
+    }
+    m_hybridControl = hybridControl;
 }

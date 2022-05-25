@@ -20,5 +20,6 @@ PYBIND11_MODULE(invKin, m) {
        .def("printPose", &Yumi::print_pose)
        .def("set_kp", &Yumi::set_kp)
        .def("set_operationPoint", &Yumi::set_operationPoint)
+       .def("set_hybridControl", &Yumi::set_hybridControl)
        .def("set_force", &Yumi::set_force);
 	}

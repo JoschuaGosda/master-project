@@ -40,8 +40,9 @@ desPose_R_const = np.concatenate((trans_const, rot_const), axis=0)
 egm_client_R = EGMClient(port=UDP_PORT_RIGHT)
 
 yumi_right = invKin.Yumi("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf")
-yumi_right.set_operationPoint(0.5)
-yumi_right.set_kp(3.65)
+yumi_right.set_operationPoint(0.7)
+yumi_right.set_kp(0.2)
+yumi_right.set_hybridControl(True)
 
 desVelocities_R_const = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 jointVelocities_R = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -83,7 +84,7 @@ while True and arduino.isOpen():
     if arduino.in_waiting: # get the number of bytes in the input buffer
         packet = arduino.readline() # type: bytes  
         str_receive = packet.decode('utf-8').rstrip('\n')
-        force = float(str_receive)
+        force = float(str_receive)/1000.0 # mN to Newtion
 
     if (time.time() - timestamp) >= (1.0/rate):
         # get the current joints angles for the right arm
