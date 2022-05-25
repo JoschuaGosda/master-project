@@ -1,5 +1,3 @@
-# TODO: check if all devices and neccessary files are online/in the right place
-# show if thats the case and ask user if he wants to start control 
 
 #!/usr/bin/env python
 from typing import Sequence
@@ -121,8 +119,6 @@ while True and arduino.isOpen():
 
         i = i+1
         timestamp = time.time()
-        ##time.sleep(1/rate) 
-
 
 
 # check if poses have been reached
