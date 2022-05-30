@@ -77,11 +77,8 @@ void Yumi::compTaskSpaceInput(){
 	Eigen::Quaterniond errorQuaternion = currentOrientation.inverse() * desiredOrientation;
 	Eigen::Vector3d errorRotationInWorldFrame = currentOrientation * errorQuaternion.vec();
 
-    m_desPosition = m_selectVelMatrix * m_desPosition + (Eigen::Matrix3d::Identity() - m_selectVelMatrix) * m_position;
-    m_desPositionDot = m_selectVelMatrix * m_desPositionDot;
-
-    m_effectiveTaskSpaceInput.head(3) = m_driftCompGain/m_sampleTime * (m_desPosition - m_position)
-										+ m_desPositionDot + m_forceTaskSpaceInput;
+    m_effectiveTaskSpaceInput.head(3) = m_selectVelMatrix * (m_driftCompGain/m_sampleTime * (m_desPosition - m_position) + m_desPositionDot) 
+										 + m_forceTaskSpaceInput;
 	m_effectiveTaskSpaceInput.tail(3) = m_driftCompGain/m_sampleTime * errorRotationInWorldFrame + m_desOrientationDot;
 
 }
@@ -107,7 +104,7 @@ Eigen::Matrix<double, 7, 1> Yumi::get_newJointValues(){
     return m_jointAngles;
 }
 
-Eigen::Matrix<double, 6, 1> Yumi::get_newPose(){
+Eigen::Matrix<double, 6, 1> Yumi::get_pose(){
     doForwardKinematics();
     Eigen::Matrix<double, 6, 1> pose;
     pose << m_position, m_orientation;

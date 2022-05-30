@@ -2,7 +2,7 @@
 # show if thats the case and ask user if he wants to start control 
 
 #!/usr/bin/env python
-from ssl import PROTOCOL_TLSv1_1
+import keyboard
 from typing import Sequence
 import time
 import copy
@@ -12,6 +12,7 @@ import libs.invKin as invKin
 from data.get_data import get_trajectory, transform2yumi_workspace, place_trajectory, logic2abb
 from matplotlib import pyplot as plt
 import serial.tools.list_ports
+from tqdm import tqdm
 
 '''
 Before running this script make sure that the starting pose of the robot (either real one or in RS) match the
@@ -43,7 +44,7 @@ egm_client_R = EGMClient(port=UDP_PORT_RIGHT)
 egm_client_L = EGMClient(port=UDP_PORT_LEFT)
 
 yumi_right = invKin.Yumi("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf")
-yumi_right.set_operationPoint(0.7)
+yumi_right.set_operationPoint(1.0)
 yumi_right.set_kp(0.2)
 yumi_right.set_hybridControl(True)
 
@@ -84,7 +85,10 @@ timestamp = time.time()
 cutting = False
 traj_samples = len(p1[:, 0]) 
 
+
 print("\n Force control only to tension the wire...")
+
+
 
 while True and arduino.isOpen():
 
@@ -97,6 +101,7 @@ while True and arduino.isOpen():
     # force control only until wire is tensioned
     if not cutting:
         if (time.time() - timestamp) >= (1.0/rate):
+            timestamp = time.time()
             # get the current joints angles for the right arm
             robot_msg_R = egm_client_R.receive_msg()
             conf_R: Sequence[float] = robot_msg_R.feedBack.joints.joints
@@ -126,17 +131,18 @@ while True and arduino.isOpen():
             jointAngles_R_old = copy.copy(jointAngles_R)
 
             i = i+1
-            timestamp = time.time()
-            if (force > 0.7):
+            if (force > 0.65) and keyboard.is_pressed('enter'):
                 cutting = True
                 jointVelocities_L = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
                 jointVelocities_R = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
                 i = 0 # reset counter
                 print("Changing to hybrid control now...")
+                pbar = tqdm(total=traj_samples)
     
     # hybrid control - cutting is True
     else:
         if (time.time() - timestamp) >= (1.0/rate):
+            timestamp = time.time()
             # copy array entries to local variables
             pos1 = p1[i, :]
             vel1 = v1[i, :]
@@ -193,9 +199,12 @@ while True and arduino.isOpen():
             jointAngles_L_old = copy.copy(jointAngles_L)
             jointAngles_R_old = copy.copy(jointAngles_R)
             i = i + 1 
-            timestamp = time.time()
+            pbar.update(1)
+            #print("freq for one loop: ", 1/(time.time()- timestamp))
+            
 
             if (i >= (traj_samples-1)):
+                pbar.close()
                 break # break out of while loop
 
 

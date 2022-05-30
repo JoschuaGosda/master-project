@@ -30,7 +30,7 @@ class Yumi {
     void process();
 
     Eigen::Matrix<double, 7, 1> get_newJointValues();
-    Eigen::Matrix<double, 6, 1> get_newPose();
+    Eigen::Matrix<double, 6, 1> get_pose();
 
     // for debugging
     void print_pose();
