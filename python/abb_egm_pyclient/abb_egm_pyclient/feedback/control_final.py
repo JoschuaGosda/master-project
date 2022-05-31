@@ -85,10 +85,15 @@ timestamp = time.time()
 cutting = False
 traj_samples = len(p1[:, 0]) 
 
+# arrays to store the results for later plotting
+log_realPose_R = np.zeros((traj_samples, 6))
+log_compPose_R = np.zeros((traj_samples, 6))
+log_realJoints_R = np.zeros((traj_samples, 7))
+log_compJoints_R = np.zeros((traj_samples, 7))
+
+log_force = np.zeros((traj_samples, 1))
 
 print("\n Force control only to tension the wire...")
-
-
 
 while True and arduino.isOpen():
 
@@ -164,6 +169,7 @@ while True and arduino.isOpen():
             joint7 = robot_msg_R.feedBack.externalJoints.joints[0]
             conf_R.insert(2, joint7)
             jointAngles_R = np.radians(np.array(conf_R))
+            log_realJoints_R[i, :] = jointAngles_R
 
             # compute the resulting jointVelocities
             if i > 0:
@@ -181,12 +187,16 @@ while True and arduino.isOpen():
             yumi_left.process()
 
             yumi_right.set_jointValues(jointAngles_R, jointVelocities_R)
+            log_realPose_R[i, :] = yumi_right.get_pose()
             yumi_right.set_desPoseVel(desPose_R, desVelocities_R)
             yumi_right.set_force(force)
             yumi_right.process()
+            log_compPose_R[i, :] = yumi_right.get_pose()
+            log_force[i, :] = force
 
             ik_jointAngles_L = yumi_left.get_newJointValues() # computed joint values from IK
             ik_jointAngles_R = yumi_right.get_newJointValues() # computed joint values from IK
+            log_compJoints_R[i, :] = ik_jointAngles_R
 
             # transform to degrees as egm wants it
             des_conf_L = np.degrees(ik_jointAngles_L)
@@ -235,3 +245,7 @@ while n < 10:
     time.sleep(0.1)
 else:
     raise TimeoutError(f"Joint positions for the left arm did not converge.")
+
+
+experimentLogs = np.hstack((p2, phi_delta, log_compPose_R, log_realPose_R, log_compJoints_R, log_realJoints_R, log_force))
+np.save('./data/experimentLogs', experimentLogs)
