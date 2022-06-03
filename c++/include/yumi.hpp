@@ -26,6 +26,7 @@ class Yumi {
     void set_kp(double kp);
     void set_operationPoint(double op);
     void set_hybridControl(bool hybridControl);
+    void set_transitionTime(double transitionTime);
 
     void process();
 
@@ -53,6 +54,10 @@ class Yumi {
 
     // gain for control
     double m_kp = 1.0;
+
+    // time for transition between position control to force control in the wires axis
+    double m_transitionTime = 0.0;
+    double m_deltaTime = 0.0; 
 
     // vars to store configuration
     rl::math::Vector3 m_desPosition = rl::math::Vector3::Zero();
@@ -84,6 +89,7 @@ class Yumi {
     Eigen::Matrix3d euler2rotMatrix(rl::math::Vector3 orientation);
     void compTaskSpaceInput();
     void compForce2VelocityController();
+    void modifySelectionMatrix();
 
     
  };

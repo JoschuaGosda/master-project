@@ -86,6 +86,7 @@ void Yumi::compTaskSpaceInput(){
 void Yumi::process(){
 
     doForwardKinematics();
+    modifySelectionMatrix();
     compForce2VelocityController();
     compTaskSpaceInput();
 
@@ -123,6 +124,7 @@ void Yumi::compForce2VelocityController(){
     // have a look at chosen ee frame in RS
     velocityEE << 0, m_force-m_forceOP, 0;
     velocityEE *= m_kp;
+    velocityEE =  (Eigen::Matrix3d::Identity() - m_selectVelMatrix) * velocityEE; // perform blending - transition from position control to force control
     // transform the velocities computed in the ee frame to the world frame
     m_forceTaskSpaceInput = m_rotationMatrix.transpose() * velocityEE;
 }
@@ -143,9 +145,28 @@ void Yumi::set_hybridControl(bool hybridControl){
                                     0, 0, 0, 
                                     0, 0, 1;
                                     
-        } else {
+        } else { // position control
             m_selectVelMatrix = Eigen::Matrix3d::Identity();
+            m_deltaTime = 0.0; // reset variable to apply blending when changing to hybrid control again
         }
     }
     m_hybridControl = hybridControl;
+}
+
+void Yumi::set_transitionTime(double transitionTime){
+    m_transitionTime = transitionTime;
+}
+
+void Yumi::modifySelectionMatrix(){
+    Eigen::Matrix3d blendingMatrix;
+    if(m_deltaTime < m_transitionTime){
+        m_deltaTime += 1.0/m_sampleTime;
+        blendingMatrix <<   0, 0, 0,
+                            0, (1 - m_deltaTime/m_transitionTime), 0,
+                            0, 0, 0; 
+    }
+    else {
+        blendingMatrix = Eigen::Matrix3d::Zero();
+    }
+    m_selectVelMatrix += blendingMatrix; 
 }
