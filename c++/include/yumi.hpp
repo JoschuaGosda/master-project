@@ -32,6 +32,7 @@ class Yumi {
 
     Eigen::Matrix<double, 7, 1> get_newJointValues();
     Eigen::Matrix<double, 6, 1> get_pose();
+    double get_manipulabilityMeasure();
 
     // for debugging
     void print_pose();
@@ -59,6 +60,9 @@ class Yumi {
     double m_transitionTime = 0.0;
     double m_deltaTime = 0.0; 
 
+    // manipulability meassure
+    double m_manipulabilty;
+
     // vars to store configuration
     rl::math::Vector3 m_desPosition = rl::math::Vector3::Zero();
     rl::math::Vector3 m_desPositionDot = rl::math::Vector3::Zero();
@@ -83,13 +87,16 @@ class Yumi {
     Eigen::Matrix<double, 7, 1> m_jointAnglesDelta;
 
     Eigen::Matrix3d m_selectVelMatrix = Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d m_modSelectVelMatrix = Eigen::Matrix3d::Identity();
 
     // private functions
     void doForwardKinematics();
     Eigen::Matrix3d euler2rotMatrix(rl::math::Vector3 orientation);
     void compTaskSpaceInput();
     void compForce2VelocityController();
+    void compIK();
     void modifySelectionMatrix();
+
 
     
  };

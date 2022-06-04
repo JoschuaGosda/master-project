@@ -22,5 +22,6 @@ PYBIND11_MODULE(invKin, m) {
        .def("set_operationPoint", &Yumi::set_operationPoint)
        .def("set_hybridControl", &Yumi::set_hybridControl)
        .def("set_transitionTime", &Yumi::set_transitionTime)
+       .def("get_manipulabilityMeasure", &Yumi::get_manipulabilityMeasure)
        .def("set_force", &Yumi::set_force);
 	}

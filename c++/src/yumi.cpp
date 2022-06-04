@@ -32,6 +32,7 @@ void Yumi::doForwardKinematics(){
 	m_orientation = t.rotation().eulerAngles(2, 1, 0).reverse();
     m_rotationMatrix = t.rotation(); // rotation from world frame to ee frame
     m_jacobian = kinematic->getJacobian();
+    m_manipulabilty = kinematic->calculateManipulabilityMeasure();
 }
 
 void Yumi::print_pose(){
@@ -77,7 +78,7 @@ void Yumi::compTaskSpaceInput(){
 	Eigen::Quaterniond errorQuaternion = currentOrientation.inverse() * desiredOrientation;
 	Eigen::Vector3d errorRotationInWorldFrame = currentOrientation * errorQuaternion.vec();
 
-    m_effectiveTaskSpaceInput.head(3) = m_selectVelMatrix * (m_driftCompGain/m_sampleTime * (m_desPosition - m_position) + m_desPositionDot) 
+    m_effectiveTaskSpaceInput.head(3) = m_modSelectVelMatrix * (m_driftCompGain/m_sampleTime * (m_desPosition - m_position) + m_desPositionDot) 
 										 + m_forceTaskSpaceInput;
 	m_effectiveTaskSpaceInput.tail(3) = m_driftCompGain/m_sampleTime * errorRotationInWorldFrame + m_desOrientationDot;
 
@@ -89,16 +90,7 @@ void Yumi::process(){
     modifySelectionMatrix();
     compForce2VelocityController();
     compTaskSpaceInput();
-
-    Eigen::Matrix<double, 7, 1> jointVelocities;
-    Eigen::Matrix<double, 7, 1> nullSpaceVelocity = -m_inverseWeighing * m_nullSpaceGradient;
-
-	jointVelocities = broccoli::core::math::solvePseudoInverseEquation(m_jacobian, m_inverseWeighing, m_effectiveTaskSpaceInput,
-                     nullSpaceVelocity, m_activationFactorTaskSpace);
-
-	m_jointAnglesDelta << jointVelocities * m_sampleTime;
-
-    m_jointAngles += m_jointAnglesDelta;
+    compIK();
 }
 
 Eigen::Matrix<double, 7, 1> Yumi::get_newJointValues(){
@@ -124,9 +116,24 @@ void Yumi::compForce2VelocityController(){
     // have a look at chosen ee frame in RS
     velocityEE << 0, m_force-m_forceOP, 0;
     velocityEE *= m_kp;
-    velocityEE =  (Eigen::Matrix3d::Identity() - m_selectVelMatrix) * velocityEE; // perform blending - transition from position control to force control
+    velocityEE =  (Eigen::Matrix3d::Identity() - m_modSelectVelMatrix) * velocityEE; // perform blending - transition from position control to force control
+    std::cout << "selectionmatrix force: " << (Eigen::Matrix3d::Identity() - m_modSelectVelMatrix) << std::endl;
+    std::cout << "selectionmatrix velocity: " << m_modSelectVelMatrix << std::endl;
+    std::cout << "velocityEE force: " << velocityEE << std::endl;
     // transform the velocities computed in the ee frame to the world frame
     m_forceTaskSpaceInput = m_rotationMatrix.transpose() * velocityEE;
+}
+
+void Yumi::compIK(){
+    Eigen::Matrix<double, 7, 1> jointVelocities;
+    Eigen::Matrix<double, 7, 1> nullSpaceVelocity = -m_inverseWeighing * m_nullSpaceGradient;
+
+	jointVelocities = broccoli::core::math::solvePseudoInverseEquation(m_jacobian, m_inverseWeighing, m_effectiveTaskSpaceInput,
+                     nullSpaceVelocity, m_activationFactorTaskSpace);
+
+	m_jointAnglesDelta << jointVelocities * m_sampleTime;
+
+    m_jointAngles += m_jointAnglesDelta;
 }
 
 void Yumi::set_kp(double kp){
@@ -160,7 +167,7 @@ void Yumi::set_transitionTime(double transitionTime){
 void Yumi::modifySelectionMatrix(){
     Eigen::Matrix3d blendingMatrix;
     if(m_deltaTime < m_transitionTime){
-        m_deltaTime += 1.0/m_sampleTime;
+        m_deltaTime += m_sampleTime;
         blendingMatrix <<   0, 0, 0,
                             0, (1 - m_deltaTime/m_transitionTime), 0,
                             0, 0, 0; 
@@ -168,5 +175,9 @@ void Yumi::modifySelectionMatrix(){
     else {
         blendingMatrix = Eigen::Matrix3d::Zero();
     }
-    m_selectVelMatrix += blendingMatrix; 
+    m_modSelectVelMatrix = m_selectVelMatrix + blendingMatrix; 
+}
+
+double Yumi::get_manipulabilityMeasure(){
+    return m_manipulabilty;
 }

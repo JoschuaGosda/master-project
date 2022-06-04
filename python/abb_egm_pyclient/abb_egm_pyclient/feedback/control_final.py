@@ -47,6 +47,7 @@ yumi_right = invKin.Yumi("/home/joschua/Coding/forceControl/master-project/c++/m
 yumi_right.set_operationPoint(1.0)
 yumi_right.set_kp(0.2)
 yumi_right.set_hybridControl(True)
+yumi_right.set_transitionTime(5.0)
 
 yumi_left = invKin.Yumi("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf")
 
