@@ -40,19 +40,26 @@ translation_R_start = copy.copy(p2[0, :])
 rotation_R_start = np.array([0, 0, 0])
 desPose_R_start = np.concatenate((translation_R_start, rotation_R_start), axis=0) 
 
+translation_L_start = copy.copy(p1[0, :])
+rotation_L_start = np.array([0, 0, 0])
+desPose_L_start = np.concatenate((translation_L_start, rotation_L_start), axis=0)
+
 egm_client_R = EGMClient(port=UDP_PORT_RIGHT)
 egm_client_L = EGMClient(port=UDP_PORT_LEFT)
 
 yumi_right = invKin.Yumi("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf")
 yumi_right.set_operationPoint(1.0)
-yumi_right.set_kp(0.2)
+yumi_right.set_kp(0.05)
 yumi_right.set_hybridControl(True)
-yumi_right.set_transitionTime(5.0)
+yumi_right.set_transitionTime(3.0)
 
 yumi_left = invKin.Yumi("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf")
 
 desVelocities_R_start = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 jointVelocities_R = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+desVelocities_L_start = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+jointVelocities_L = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
 # SETUP SERIAL INTERFACE
 # find active ports
@@ -92,6 +99,11 @@ log_compPose_R = np.zeros((traj_samples, 6))
 log_realJoints_R = np.zeros((traj_samples, 7))
 log_compJoints_R = np.zeros((traj_samples, 7))
 
+log_realPose_L = np.zeros((traj_samples, 6))
+log_compPose_L = np.zeros((traj_samples, 6))
+log_realJoints_L = np.zeros((traj_samples, 7))
+log_compJoints_L = np.zeros((traj_samples, 7))
+
 log_force = np.zeros((traj_samples, 1))
 
 print("\n Force control only to tension the wire...")
@@ -115,26 +127,42 @@ while True and arduino.isOpen():
             conf_R.insert(2, joint7)
             jointAngles_R = np.radians(np.array(conf_R))
 
+            # get the current joints angles for the left arm
+            robot_msg_L = egm_client_L.receive_msg()
+            conf_L: Sequence[float] = robot_msg_L.feedBack.joints.joints
+            joint7 = robot_msg_L.feedBack.externalJoints.joints[0]
+            conf_L.insert(2, joint7)
+            jointAngles_L = np.radians(np.array(conf_L))
+
             # compute the resulting jointVelocities
             if i > 0:
                 jointVelocities_R = (jointAngles_R - jointAngles_R_old)/rate
+                jointVelocities_L = (jointAngles_L - jointAngles_L_old)/rate
 
             yumi_right.set_jointValues(jointAngles_R, jointVelocities_R)
             yumi_right.set_desPoseVel(desPose_R_start, desVelocities_R_start)
             yumi_right.set_force(force)
             yumi_right.process()
 
+            yumi_left.set_jointValues(jointAngles_L, jointVelocities_L)
+            yumi_left.set_desPoseVel(desPose_L_start, desVelocities_L_start)
+            yumi_left.process()
+
             print("force in [N] is: %5.2f" %  force)
 
             ik_jointAngles_R = yumi_right.get_newJointValues() # computed joint values from IK
+            ik_jointAngles_L = yumi_left.get_newJointValues()
 
             # transform to degrees as egm wants it
             des_conf_R = np.degrees(ik_jointAngles_R)
+            des_conf_L = np.degrees(ik_jointAngles_L)
 
             egm_client_R.send_planned_configuration(logic2abb(des_conf_R))
+            egm_client_L.send_planned_configuration(logic2abb(des_conf_L))
 
             # save joint values to compute joint velocities in the next iteration
             jointAngles_R_old = copy.copy(jointAngles_R)
+            jointAngles_L_old = copy.copy(jointAngles_L)
 
             i = i+1
             if (force > 0.65) and keyboard.is_pressed('enter'):
@@ -163,6 +191,7 @@ while True and arduino.isOpen():
             joint7 = robot_msg_L.feedBack.externalJoints.joints[0]
             conf_L.insert(2, joint7)
             jointAngles_L = np.radians(np.array(conf_L))
+            log_realJoints_L[i, :] = jointAngles_L
 
             # get the current joints angles for the right arm
             robot_msg_R = egm_client_R.receive_msg()
@@ -184,8 +213,10 @@ while True and arduino.isOpen():
             desVelocities_R = np.concatenate((vel2, phi_dot), axis=0) 
 
             yumi_left.set_jointValues(jointAngles_L, jointVelocities_L)
+            log_realPose_L[i, :] = yumi_left.get_pose()
             yumi_left.set_desPoseVel(desPose_L, desVelocities_L)
             yumi_left.process()
+            log_compPose_L[i, :] = yumi_left.get_pose()
 
             yumi_right.set_jointValues(jointAngles_R, jointVelocities_R)
             log_realPose_R[i, :] = yumi_right.get_pose()
@@ -196,6 +227,7 @@ while True and arduino.isOpen():
             log_force[i, :] = force
 
             ik_jointAngles_L = yumi_left.get_newJointValues() # computed joint values from IK
+            log_compJoints_L[i, :] = ik_jointAngles_L
             ik_jointAngles_R = yumi_right.get_newJointValues() # computed joint values from IK
             log_compJoints_R[i, :] = ik_jointAngles_R
 
@@ -248,5 +280,5 @@ else:
     raise TimeoutError(f"Joint positions for the left arm did not converge.")
 
 
-experimentLogs = np.hstack((p2, phi_delta, log_compPose_R, log_realPose_R, log_compJoints_R, log_realJoints_R, log_force))
-np.save('./data/experimentLogs', experimentLogs)
+experimentLogs = np.hstack((p2, phi_delta, log_compPose_R, log_realPose_R, log_compJoints_R, log_realJoints_R, log_force, p1, log_compJoints_R, log_realPose_L, log_compJoints_L, log_realJoints_L))
+np.save('./data/experimentLogs300-0,05-1-realIK', experimentLogs)
