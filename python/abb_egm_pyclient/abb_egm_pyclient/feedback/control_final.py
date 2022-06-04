@@ -13,12 +13,23 @@ from data.get_data import get_trajectory, transform2yumi_workspace, place_trajec
 from matplotlib import pyplot as plt
 import serial.tools.list_ports
 from tqdm import tqdm
+from stateMachine import FoamCuttingMachine
 
 '''
 Before running this script make sure that the starting pose of the robot (either real one or in RS) match the
 starting pose of the computed joint angles. This script sends desired joint position to the robot. It takes to real
 joint positions at the robot into account
 '''
+
+foamCutting = FoamCuttingMachine()
+
+def get_realJointAngles(egm_client):
+    robot_msg = egm_client.receive_msg()
+    conf: Sequence[float] = robot_msg.feedBack.joints.joints
+    joint7 = robot_msg.feedBack.externalJoints.joints[0]
+    conf.insert(2, joint7)
+    jointAngles = np.radians(np.array(conf))
+    return jointAngles
 
 # READ IN THE TRAJECTORY
 # get the data in the yumi workspace
@@ -35,12 +46,14 @@ UDP_PORT_RIGHT = 6511
 rate = 80
 
 # take the first desired taskSpaceInput for the right arm and simulate force sensor data 
-translation_R_start = copy.copy(p2[0, :])
+#translation_R_start = copy.copy(p2[0, :])
+translation_R_start = np.array([0.3, -0.2,  0.2]) # starting pose synched with robot
 #rotation_R_start = copy.copy(phi_delta[0, :])
 rotation_R_start = np.array([0, 0, 0])
 desPose_R_start = np.concatenate((translation_R_start, rotation_R_start), axis=0) 
 
-translation_L_start = copy.copy(p1[0, :])
+#translation_L_start = copy.copy(p1[0, :])
+translation_L_start = np.array([0.3, 0.2, 0.2]) # starting pose synched with robot
 rotation_L_start = np.array([0, 0, 0])
 desPose_L_start = np.concatenate((translation_L_start, rotation_L_start), axis=0)
 
@@ -108,31 +121,32 @@ log_force = np.zeros((traj_samples, 1))
 
 print("\n Force control only to tension the wire...")
 
-while True and arduino.isOpen():
+foamCutting.start_syncronizing()
+foamCutting.start_tensioning()
 
+while True and arduino.isOpen():
+    #print('current StateMachine state: ', foamCutting.current_state)
     # check for new force data
     if arduino.in_waiting: # get the number of bytes in the input buffer
         packet = arduino.readline() # type: bytes  
         str_receive = packet.decode('utf-8').rstrip('\n')
         force = float(str_receive)/1000.0 # mN to Newton
 
-    # force control only until wire is tensioned
-    if not cutting:
+    if foamCutting.is_moveToStartPose:
         if (time.time() - timestamp) >= (1.0/rate):
             timestamp = time.time()
-            # get the current joints angles for the right arm
-            robot_msg_R = egm_client_R.receive_msg()
-            conf_R: Sequence[float] = robot_msg_R.feedBack.joints.joints
-            joint7 = robot_msg_R.feedBack.externalJoints.joints[0]
-            conf_R.insert(2, joint7)
-            jointAngles_R = np.radians(np.array(conf_R))
 
-            # get the current joints angles for the left arm
-            robot_msg_L = egm_client_L.receive_msg()
-            conf_L: Sequence[float] = robot_msg_L.feedBack.joints.joints
-            joint7 = robot_msg_L.feedBack.externalJoints.joints[0]
-            conf_L.insert(2, joint7)
-            jointAngles_L = np.radians(np.array(conf_L))
+
+        
+
+    # force control only until wire is tensioned
+    elif foamCutting.is_tensionWire:
+        if (time.time() - timestamp) >= (1.0/rate):
+            timestamp = time.time()
+
+            # get the current joints angles for the right arm
+            jointAngles_R = get_realJointAngles(egm_client_R)
+            jointAngles_L = get_realJointAngles(egm_client_L)
 
             # compute the resulting jointVelocities
             if i > 0:
@@ -171,10 +185,11 @@ while True and arduino.isOpen():
                 jointVelocities_R = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
                 i = 0 # reset counter
                 print("Changing to hybrid control now...")
+                foamCutting.start_cutting()
                 pbar = tqdm(total=traj_samples)
     
     # hybrid control - cutting is True
-    else:
+    elif foamCutting.is_cutting:
         if (time.time() - timestamp) >= (1.0/rate):
             timestamp = time.time()
             # copy array entries to local variables
@@ -186,19 +201,11 @@ while True and arduino.isOpen():
             phi_dot = dphi[i, :]
 
             # get the current joints angles for the left arm
-            robot_msg_L = egm_client_L.receive_msg()
-            conf_L: Sequence[float] = robot_msg_L.feedBack.joints.joints
-            joint7 = robot_msg_L.feedBack.externalJoints.joints[0]
-            conf_L.insert(2, joint7)
-            jointAngles_L = np.radians(np.array(conf_L))
+            jointAngles_L = get_realJointAngles(egm_client_L)
             log_realJoints_L[i, :] = jointAngles_L
 
             # get the current joints angles for the right arm
-            robot_msg_R = egm_client_R.receive_msg()
-            conf_R: Sequence[float] = robot_msg_R.feedBack.joints.joints
-            joint7 = robot_msg_R.feedBack.externalJoints.joints[0]
-            conf_R.insert(2, joint7)
-            jointAngles_R = np.radians(np.array(conf_R))
+            jointAngles_R = get_realJointAngles(egm_client_R)
             log_realJoints_R[i, :] = jointAngles_R
 
             # compute the resulting jointVelocities
@@ -248,6 +255,7 @@ while True and arduino.isOpen():
 
             if (i >= (traj_samples-1)):
                 pbar.close()
+                foamCutting.end_cutting()
                 break # break out of while loop
 
 
@@ -281,4 +289,4 @@ else:
 
 
 experimentLogs = np.hstack((p2, phi_delta, log_compPose_R, log_realPose_R, log_compJoints_R, log_realJoints_R, log_force, p1, log_compJoints_R, log_realPose_L, log_compJoints_L, log_realJoints_L))
-np.save('./data/experimentLogs300-0,05-1-realIK', experimentLogs)
+#np.save('./data/experimentLogs300-0,05-1-x', experimentLogs)
