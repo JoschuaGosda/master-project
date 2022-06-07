@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 try:
     data = np.load('data/experimentLogs.npy')
+    data2 = np.load('data/forceSignal-500.npy')
 except FileNotFoundError:
     print('It seems like you need to run the script first that generate the requested data')
 
@@ -18,19 +19,29 @@ force = data[:, 32:33]
 noSamples = len(force)
 
 time = np.linspace(0, round(1.0/80.0 * noSamples), num=noSamples)
+time2 = np.linspace(0, round(1.0/80.0 * len(data2)), num=len(data2))
 #time.shape = (time.size//1, 1)
 
 
 
 fig = plt.figure()
 
-ax1 = fig.add_subplot(121)
-ax1.plot(time, force[:, 0])
-ax1.set_title('force')
+ax1 = fig.add_subplot(211)
+ax1.plot(time, force[:, 0]*5)
+ax1.set_title('force trajectory')
 ax1.set_ylabel('N')
 ax1.set_xlabel('s')
 
-ax2 = fig.add_subplot(122)
+ax2 = fig.add_subplot(212)
+ax2.plot(time2, data2)
+ax2.set_title('force constant weight')
+ax2.set_ylabel('N')
+ax2.set_xlabel('s')
+
+
+
+
+""" ax2 = fig.add_subplot(122)
 ax2.plot(time, compJoints[:, 0], label="J1")
 ax2.plot(time, compJoints[:, 1], label="J2")
 ax2.plot(time, compJoints[:, 2], label="J3")
@@ -43,7 +54,7 @@ ax2.plot(time[0:-2], realJoints[:, 3], label="J4", linestyle="dashed")
 ax2.set_title('joint angles')
 ax2.set_ylabel('rad')
 ax2.set_xlabel('s')
-ax2.legend()
+ax2.legend() """
 
 
 fig = plt.figure()
