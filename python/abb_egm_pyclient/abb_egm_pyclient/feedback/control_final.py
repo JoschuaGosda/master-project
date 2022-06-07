@@ -58,7 +58,7 @@ egm_client_R = EGMClient(port=UDP_PORT_RIGHT)
 egm_client_L = EGMClient(port=UDP_PORT_LEFT)
 
 yumi_right = invKin.Yumi("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf")
-yumi_right.set_operationPoint(1.0)
+yumi_right.set_operationPoint(5.0) 
 yumi_right.set_kp(0.05)
 yumi_right.set_hybridControl(False)
 yumi_right.set_transitionTime(3.0)

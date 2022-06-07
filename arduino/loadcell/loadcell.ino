@@ -6,10 +6,10 @@
 const int LOADCELL_DOUT_PIN = 2;
 const int LOADCELL_SCK_PIN = 3;
 
-const float calibration_weight = 4.9;
+const float calibration_weight = 4900.0;
 float zero_reading, load_reading;
 
-const float calibration_factor = -479404.84;
+const float calibration_factor = -99.52;
 
 
 HX711 scale;
@@ -25,26 +25,11 @@ void setup() {
   // default "128" (Channel A) is used here.
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
 
-  //Serial.print("offset: ");
-  //Serial.print(scale.get_offset(), DEC);
-  //Serial.print("\t scale: ");
-  //Serial.println(scale.get_scale(), DEC);
-
-  //Serial.println("tare the scale. in 3 sec. Make sure it is unloaded");
-
   delay(3);
-
 
   // determine the offset - setup: no load
   scale.tare();  // sets the offset value within scale to current value of reading
   zero_reading = scale.read_average(10); //average over 10 vales
-  //scale.set_scale(); 
-  //scale.get_units(10);
-
-  //Serial.print("offset: ");
-  //Serial.print(scale.get_offset(), DEC);
-  //Serial.print("\t scale: ");
-  //Serial.println(scale.get_scale(), DEC);
 
 
   //delay(2);
@@ -55,28 +40,13 @@ void setup() {
     //}
     
   //load_reading = scale.read_average(10);
-  /*Serial.print("zero and load reading: ");
-  Serial.print(zero_reading, DEC);
-  Serial.print("  ");
-  Serial.println(load_reading, DEC);*/
+
   //scale.set_scale((load_reading - zero_reading)/calibration_weight);  // this value is obtained by calibrating the scale with known weights; see the README for details
   //incomingByte = Serial.read();   // clear the receive buffer by assigning value to var
 
   //Serial.print("the calibration factor is:  ");
   //Serial.println(load_reading - zero_reading/calibration_weight);
   
-/*
-  Serial.println("set scale....");
-  Serial.print("offset: ");
-  Serial.print(scale.get_offset(), DEC);
-  Serial.print("\t scale: ");
-  Serial.println(scale.get_scale(), DEC);
-
-  Serial.print("get_value: ");
-  Serial.print(scale.get_value());
-  Serial.print("\t get_units: ");
-  Serial.println(scale.get_units());
-*/
   scale.set_scale(calibration_factor);
   
   //Serial.println("load cell is setup. Start reading now...");
