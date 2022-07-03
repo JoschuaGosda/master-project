@@ -28,8 +28,8 @@ void setup() {
   delay(3);
 
   // determine the offset - setup: no load
-  scale.tare();  // sets the offset value within scale to current value of reading
-  zero_reading = scale.read_average(10); //average over 10 vales
+  scale.tare(10);  // sets the offset value within scale to current value of reading
+  zero_reading = scale.  //average over 10 vales
 
 
   //delay(2);
