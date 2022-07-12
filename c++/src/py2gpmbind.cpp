@@ -1,17 +1,27 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
-#include "gpm.hpp"
+#include "yumi.hpp"
+#include <rl/mdl/UrdfFactory.h>
 
 namespace py = pybind11;
 
-int add(int i, int j) {
-    return i + j;
-}
 
 
 PYBIND11_MODULE(invKin, m) {
     m.doc() = "pybind11 binding to C++ function that computes IK based on GPM"; // optional module docstring
-    m.def("gpm", &gpm, "A function to compute the invserse kinematics for a 7 DOF serial manipulator on vecocity level with comfort pose and manipulabilty gradient",
-    py::arg("desired pose"),py::arg("desired Velocities"), py::arg("joint angles"), py::arg("joint velocities"), py::arg("left arm -> 1, right arm -> 0"), py::return_value_policy::copy);
-	
+
+    py::class_<Yumi>(m, "Yumi")
+       .def(py::init<std::string>())
+       .def("set_jointValues", &Yumi::set_jointValues, py::arg("joint angles"), py::arg("joint velocities"))
+       .def("set_desPoseVel", &Yumi::set_desPoseVel, py::arg("desired pose"), py::arg("desired velocities"))
+       .def("process", &Yumi::process)
+       .def("get_newJointValues", &Yumi::get_newJointValues, py::return_value_policy::copy)
+       .def("get_pose", &Yumi::get_pose, py::return_value_policy::copy)
+       .def("printPose", &Yumi::print_pose)
+       .def("set_kp", &Yumi::set_kp)
+       .def("set_operationPoint", &Yumi::set_operationPoint)
+       .def("set_hybridControl", &Yumi::set_hybridControl)
+       .def("set_transitionTime", &Yumi::set_transitionTime)
+       .def("get_manipulabilityMeasure", &Yumi::get_manipulabilityMeasure)
+       .def("set_force", &Yumi::set_force);
 	}

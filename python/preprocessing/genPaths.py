@@ -3,6 +3,8 @@ from numpy.linalg import norm
 from math import sqrt, cos, sin
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.patches import Rectangle
+
 
 # read g-code data from txt-file
 with open('preprocessing/gcode.txt') as f:
@@ -31,7 +33,7 @@ pos1, pos2 = pos_split[0]*0.001, pos_split[1]*0.001 # transform to SI-units - [m
 # TODO: compute trajectory based on path of g-code
 # set a cutting speed, sample rate and compute necessary
 # position at every time step
-c_speed = 3000 * 0.001 * 1/60 # define cutting speed as 300 mm/min [m/s]
+c_speed = 300 * 0.001 * 1/60 # define cutting speed as 300 mm/min [m/s]
 st = 1.0/80.0 # highest possible sample time - 250 Hz
 
 # modificatin to delete in order to check angles in RS
@@ -55,7 +57,7 @@ for i in range(1, len(pos1[:,0])):
         dp1_len = norm(dp1, 2)
         dp2_len = norm(dp2, 2) 
         # number of section in between original points
-        nr_sect = int(round(dp1_len/(c_speed*st))) 
+        nr_sect = round(dp1_len/(c_speed*st))
         #print(len(p1x), "+ ", nr_sect)
 
         # append everthing to lists       
@@ -81,33 +83,6 @@ v1.append(v1[-1])
 v1 = np.array(v1)
 v1 = np.hstack((v1, np.zeros((len(v1[:,0]), 1))))
 
-
-# do plots for tcp1
-fig = plt.figure()
-plt.scatter(p1[:,0], p1[:,1])
-plt.scatter(pos1[:,0], pos1[:,1], marker="x")
-plt.show()
-
-fig = plt.figure()
-v1_abs = np.array(list(map(lambda x: norm(x, 2), v1))).reshape(len(v1[:,0]),1) 
-plt.scatter(np.linspace(0, len(v1[:,0])-1, len(v1[:,0])).reshape(len(v1[:,0]),1), v1_abs, marker='x')
-plt.show()
-
-# make a 3D visualization
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(p1[:,0], p1[:,1], np.zeros(len(p1[:,0])))
-ax.scatter(pos1[:,0], pos1[:,1], np.zeros(len(pos1[:,0])), marker="x")
-ax.plot(p1[:,0], p1[:,1], np.squeeze(v1_abs))
-plt.show()
-
-# do plot for tcp2
-fig = plt.figure()
-plt.scatter(p2[:,0], p2[:,1])
-plt.scatter(pos2[:,0], pos2[:,1], marker="x")
-plt.show()
-
-
 # number of points in paths
 pNum = len(p1[:,0])
 # length of wire, defined in 4-axis setup 
@@ -122,6 +97,7 @@ p2m_ref = np.hstack((p2,z2)) # original coordinates
 effLen = np.zeros((pNum,1))
 # using the zyx euler convention to store orientation - same in robot studio
 ang = np.zeros((pNum,3))
+R_01 = []
 
 for i in range(pNum):
     x1, x2 = p1[i,0], p2[i,0]
@@ -156,7 +132,7 @@ for i in range(pNum):
     # rotation from first frame to initial frame
     R10 = np.transpose(R01)
 
-    # build transformation matrix (rotation and translation) - r02 = T01 x r12
+    # build transformation matrix (rotation and translation) - r02 = T01 x r12  
     # vector 1 in inital frame
     r0_01 = np.array([[x1], [y1], [0]])
     # vector in wires direction in first frame
@@ -166,6 +142,9 @@ for i in range(pNum):
 
     # store values, cut last entry being 1 that was added for the transformation
     p2m[i,:] = np.transpose(r0_02)
+    
+    # saving rotation matrices for easier transformation in postprocessing for plotting
+    R_01.append(R10)
 
 # compute the respective vecolity of p2 - after doing the interpolation it takes the sample time st to the next point
 # slice the first and the last sample 
@@ -201,24 +180,23 @@ for i, (r12,r22_) in enumerate(zip(dist_12, dist_22_)):
     assert (effLen[i, 0] - wLen - r22_) < 0.00001, "path coordinate of p2 violates against to be compensated length difference"
 
 
-fig = plt.figure()
-plt.scatter(p1m[200:300, 0], p1m[200:300, 2], label="p1")
-plt.scatter(p2m_ref[200:300, 0], p2m_ref[200:300,2], label="p2_ref")
-plt.scatter(p2m[200:300, 0], p2m[200:300,2], label="p2")
-plt.legend()
-plt.show()
-
-# plot the data for visualisation
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(p1m[:,0],p1m[:,1],p1m[:,2])
-ax.scatter(p2m[:,0],p2m[:,1],p2m[:,2])
-ax.scatter(p2m_ref[:,0],p2m_ref[:,1],p2m_ref[:,2])
-ax.set_xlim(0,0.170)
-ax.set_ylim(0,0.100)
-ax.set_zlim(0.395,0.405)
-plt.show()
-
 # make data ready for export
 traj_data = np.hstack((p1m, v1, p2m, v2, ang, odot))
-np.save('traj_data', traj_data)
+# save data for application
+#np.save('./data/traj_data', traj_data)
+
+
+# save data to decouple preprocessing and plotting
+# p1, pos1, p2, pos2, p2m_ref, p1m , p2m, v1
+plot_path = '/home/joschua/Coding/forceControl/master-project/python/plots/preprocessing/'
+np.save(plot_path +'p1', p1)
+np.save(plot_path+'p2', p2)
+np.save(plot_path+'pos1', pos1)
+np.save(plot_path+'pos2', pos2)
+np.save(plot_path+'p1m', p1m)
+np.save(plot_path+'p2m', p2m)
+np.save(plot_path+'p2m_ref', p2m_ref)
+np.save(plot_path+'v1', v1)
+np.save(plot_path+'v2', v2)
+
+np.save('/home/joschua/Coding/forceControl/master-project/python/plots/postprocessing/R_01', R_01)

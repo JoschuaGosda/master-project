@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 from typing import Sequence
 import time
-
 import numpy as np
-
-
 from abb_egm_pyclient import EGMClient
+from data.get_data import get_desJoints_L, get_desJoints_R, logic2abb
+
 
 '''
 Before running this script make sure that the starting pose of the robot (either real one or in RS) match the
@@ -16,17 +15,13 @@ the IK does not take the real joint angles and velocities into account but suppo
 
 UDP_PORT_LEFT = 6510
 UDP_PORT_RIGHT = 6511
-comp_conf_left = np.load('./abb_egm_pyclient/abb_egm_pyclient/feedforward_offline/desJointAngles_left.npy')
-comp_conf_right = np.load('./abb_egm_pyclient/abb_egm_pyclient/feedforward_offline/desJointAngles_right.npy')
+comp_conf_left = get_desJoints_L()
+comp_conf_right = get_desJoints_R()
 rate = 80
-
-# rearrange the logic joint values to the strange convention abb has
-def logic2abb(joint_values):
-    return joint_values[[0, 1, 3, 4, 5, 6, 2]]
-
 
 egm_client_left = EGMClient(port=UDP_PORT_LEFT)
 egm_client_right = EGMClient(port=UDP_PORT_RIGHT)
+
 
 for n in range(len(comp_conf_left[:,0])):
 

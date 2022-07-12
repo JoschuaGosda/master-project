@@ -14,9 +14,9 @@ find_package (broccoli 3.0.0 COMPONENTS eigen REQUIRED)
 find_package(RL COMPONENTS MDL REQUIRED)
 
 # dependencies for gpm function
-add_library(gpm SHARED src/gpm.cpp)
+add_library(my_funcs SHARED src/yumi.cpp)
 target_link_libraries (
-    gpm 
+    my_funcs 
     ${RL_LIBRARIES}
     eat::broccoli
     Eigen3::Eigen
@@ -27,12 +27,12 @@ add_subdirectory(deps/pybind11) # include pybind11 as a submodule
 pybind11_add_module(invKin src/py2gpmbind.cpp)
 target_link_libraries(
     invKin PUBLIC 
-    gpm
+    my_funcs
     ${RL_LIBRARIES}
     eat::broccoli
 )
 
-add_executable(myMain src/main.cpp src/gpm.cpp)
+add_executable(myMain src/main.cpp src/yumi.cpp)
 target_link_libraries(
     myMain
     eat::broccoli
