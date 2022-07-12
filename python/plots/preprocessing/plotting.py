@@ -13,6 +13,7 @@ pos1 = np.load(import_path+'pos1.npy')
 pos2 = np.load(import_path+'pos2.npy')
 p2m_ref = np.load(import_path+'p2m_ref.npy')
 v1 = np.load(import_path+'v1.npy')
+v2 = np.load(import_path+'v2.npy')
 
 # use self-defined tum-cycler for TUM-blue colors
 plt.style.use('mylatex')
@@ -22,11 +23,11 @@ plt.rcParams.update({
     "font.family": "serif",  # use serif/main font for text elements
     "text.usetex": True,     # use inline math for ticks
     "pgf.rcfonts": False,     # don't setup fonts from rc parameters
-    "legend.loc": 'upper right',
+    #"legend.loc": 'upper right',
     "savefig.directory": '/home/joschua/Documents/Studium/TUM/Thesis/documentation/thesis/myWorkFiles/AMStudentThesis/figures/plots/'
     })
 
-# do plots for tcp1
+""" # do plots for tcp1
 #fig = plt.figure()
 fig = plt.figure(figsize=(6.25, 2))
 ax = fig.add_subplot(111)
@@ -50,14 +51,26 @@ plt.show()
 
 fig.tight_layout()
 #fig.savefig('/home/joschua/Documents/Studium/TUM/Thesis/documentation/thesis/myWorkFiles/AMStudentThesis/figures/plots/lefttraj_part.pgf', format='pgf')
+ """
 
-
-fig = plt.figure()
+fig = plt.figure(figsize=(6.25, 2))
+ax = fig.add_subplot(111)
 v1_abs = np.array(list(map(lambda x: norm(x, 2), v1))).reshape(len(v1[:,0]),1) 
-plt.plot(np.linspace(0, (len(v1[:,0])-1)*1.0/80.0, len(v1[:,0])).reshape(len(v1[:,0]),1), v1_abs*1000, marker='x')
-plt.ylim(bottom=0)
+v2_abs = np.array(list(map(lambda x: norm(x, 2), v2))).reshape(len(v2[:,0]),1) 
+timeline = np.linspace(0, (len(v1[:,0])-1)*1.0/80.0, len(v1[:,0])).reshape(len(v1[:,0]),1)
+v_des = np.ones((len(timeline), 1))* 1000
+ax.plot( timeline, v1_abs*1000*60, label='$v_1$')
+ax.plot( timeline, v2_abs*1000*60, label='$v_2$')
+ax.plot( timeline, v_des, linestyle='dashed', label='$v_f$')
+ax.set_xlabel('s')
+ax.set_ylabel('mm/min')
+ax.legend()
+#plt.ylim(bottom=0)
+fig.tight_layout()
 plt.show()
 
+
+""" 
 # make a 3D visualization
 fig = plt.figure(figsize=(10, 5))
 ax = fig.add_subplot(111, projection='3d')
@@ -69,11 +82,11 @@ ax.set_ylim(0, 100)
 ax.view_init(elev=25., azim=-115.)
 plt.show() 
 
-""" # do plot for tcp2
+# do plot for tcp2
 fig = plt.figure()
 plt.scatter(p2[:,0], p2[:,1])
 plt.scatter(pos2[:,0], pos2[:,1], marker="x")
-plt.show() """
+plt.show() 
 
 
 fig = plt.figure()
@@ -103,4 +116,4 @@ ax.set_zlabel('$y_2$')
 ax.legend()
 plt.show() 
 
-fig.tight_layout() 
+fig.tight_layout()  """

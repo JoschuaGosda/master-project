@@ -33,7 +33,7 @@ pos1, pos2 = pos_split[0]*0.001, pos_split[1]*0.001 # transform to SI-units - [m
 # TODO: compute trajectory based on path of g-code
 # set a cutting speed, sample rate and compute necessary
 # position at every time step
-c_speed = 1000 * 0.001 * 1/60 # define cutting speed as 300 mm/min [m/s]
+c_speed = 300 * 0.001 * 1/60 # define cutting speed as 300 mm/min [m/s]
 st = 1.0/80.0 # highest possible sample time - 250 Hz
 
 # modificatin to delete in order to check angles in RS
@@ -97,6 +97,7 @@ p2m_ref = np.hstack((p2,z2)) # original coordinates
 effLen = np.zeros((pNum,1))
 # using the zyx euler convention to store orientation - same in robot studio
 ang = np.zeros((pNum,3))
+R_01 = []
 
 for i in range(pNum):
     x1, x2 = p1[i,0], p2[i,0]
@@ -141,6 +142,9 @@ for i in range(pNum):
 
     # store values, cut last entry being 1 that was added for the transformation
     p2m[i,:] = np.transpose(r0_02)
+    
+    # saving rotation matrices for easier transformation in postprocessing for plotting
+    R_01.append(R10)
 
 # compute the respective vecolity of p2 - after doing the interpolation it takes the sample time st to the next point
 # slice the first and the last sample 
@@ -193,3 +197,6 @@ np.save(plot_path+'p1m', p1m)
 np.save(plot_path+'p2m', p2m)
 np.save(plot_path+'p2m_ref', p2m_ref)
 np.save(plot_path+'v1', v1)
+np.save(plot_path+'v2', v2)
+
+np.save('/home/joschua/Coding/forceControl/master-project/python/plots/postprocessing/R_01', R_01)
