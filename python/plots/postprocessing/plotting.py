@@ -6,7 +6,7 @@ R_01 = np.load('/home/joschua/Coding/forceControl/master-project/python/plots/po
 
 #experimentLogs = np.hstack((p2, phi_delta, log_compPose_R, log_realPose_R, log_compJoints_R, log_realJoints_R, log_force, p1, log_compJoints_R, log_realPose_L, log_compJoints_L, log_realJoints_L))
 
-data = np.load('./data/experimentLogs300-0,2-1.npy')
+data = np.load('./data/experimentLogs300-0,4-1.npy')
 p2_des = data[:, 0:3]
 p2_is = data[:, 12:15]
 p2_comp = data[:, 6:9]

@@ -10,35 +10,40 @@
 
 int main(int, char**) {
 
-	std::string path2yumi_l = "/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf";
-	Yumi yumi_l(path2yumi_l);
+	std::string path2yumi_r = "/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf";
+	Yumi yumi_r(path2yumi_r);
 
 	Eigen::Matrix<double, 7, 1> jointAngles;
-	jointAngles << 90.48, 17.87, -25.0, 48.0, -137.0, 122.0, -74.21;
+	//jointAngles << 90.48, 17.87, -25.0, 48.0, -137.0, 122.0, -74.21;
+	jointAngles << -110.0, 29.85, 35.92, 49.91, 117.0, 123.0, -117.0;
+	//jointAngles << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 	jointAngles *= rl::math::DEG2RAD;
 
 	Eigen::Matrix<double, 7, 1> jointVelocities;
 	jointVelocities << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
-	yumi_l.set_jointValues(jointAngles, jointVelocities);
+	yumi_r.set_jointValues(jointAngles, jointVelocities);
+	Eigen::Matrix<double, 6, 1> pose = yumi_r.get_pose();
+	pose.tail(3) *= rl::math::RAD2DEG;
+
+	std::cout << "current pose is: " << pose << std::endl;
 
 
+	/*
 	// Desired Values
 	Eigen::Matrix<double, 6, 1> desPose;
 	desPose << 0.300, 0.200, 0.200, 0.0*rl::math::DEG2RAD, 0.0*rl::math::DEG2RAD, 0.0*rl::math::DEG2RAD; // obtained from RS with stated joint values
 	Eigen::Matrix<double, 6, 1> desVelocity;
 	desVelocity << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
-	yumi_l.set_desPoseVel(desPose, desVelocity);
-
-	yumi_l.process();
-
-
+	
+	yumi_r.set_desPoseVel(desPose, desVelocity);
+	yumi_r.process();
 	Eigen::Matrix<double, 7, 1> newJointValues;
-	newJointValues = yumi_l.get_newJointValues();
-
+	newJointValues = yumi_r.get_newJointValues();
 	std::cout << "old joint values:  " << jointAngles << std::endl;
 	std::cout << "new joint values:  " << newJointValues << std::endl;
+	*/
 
 
 

@@ -22,6 +22,20 @@ time = np.linspace(0, round(1.0/80.0 * noSamples), num=noSamples)
 time2 = np.linspace(0, round(1.0/80.0 * len(data2)), num=len(data2))
 #time.shape = (time.size//1, 1)
 
+fig = plt.figure()
+
+p2_is = realPose[:,0:3]
+p2_des = desPose[:, 0:3]
+e = p2_des - p2_is
+ax1 = fig.add_subplot(111)
+ax1.plot(e[0:-10, 1])
+ax1.set_ylabel('mm')
+ax1.set_xlabel('samples')
+plt.show()
+
+
+
+
 
 
 fig = plt.figure()

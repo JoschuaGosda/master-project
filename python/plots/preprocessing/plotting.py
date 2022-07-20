@@ -27,8 +27,8 @@ plt.rcParams.update({
     "savefig.directory": '/home/joschua/Documents/Studium/TUM/Thesis/documentation/thesis/myWorkFiles/AMStudentThesis/figures/plots/'
     })
 
-""" # do plots for tcp1
-#fig = plt.figure()
+ # do plots for tcp1
+""" #fig = plt.figure()
 fig = plt.figure(figsize=(6.25, 2))
 ax = fig.add_subplot(111)
 ax.scatter(p1[:,0]*1000, p1[:,1]*1000-53.7, label='$p_{1*}$', color='#005293')
@@ -68,9 +68,9 @@ ax.legend()
 #plt.ylim(bottom=0)
 fig.tight_layout()
 plt.show()
+ 
 
 
-""" 
 # make a 3D visualization
 fig = plt.figure(figsize=(10, 5))
 ax = fig.add_subplot(111, projection='3d')
@@ -116,4 +116,4 @@ ax.set_zlabel('$y_2$')
 ax.legend()
 plt.show() 
 
-fig.tight_layout()  """
+fig.tight_layout()  

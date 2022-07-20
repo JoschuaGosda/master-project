@@ -118,8 +118,8 @@
   <joint name="yumi_joint_6_r" type="revolute">
     <parent link="yumi_link_6_r"/>
     <child link="yumi_link_7_r"/>
-    <origin rpy="0.0 0.0 1.57079632679" xyz="0.027101 0.116653 -0.00047"/>
-    <axis xyz="1 0 0"/>
+    <origin rpy="-1.57079632679 0.0 0.0" xyz="0.027 0.029 0.0"/>
+    <axis xyz="0 0 1"/>
     <limit effort="300" lower="-3.99680398707" upper="3.99680398707" velocity="6.98131700798"/>
     <dynamics damping="0.5"/>
   </joint>

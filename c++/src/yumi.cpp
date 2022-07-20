@@ -87,6 +87,9 @@ void Yumi::compTaskSpaceInput(){
 void Yumi::process(){
 
     doForwardKinematics();
+    if(m_additionalManipConstraint){
+        computeManipulabilityGradient();
+    }
     modifySelectionMatrix();
     compForce2VelocityController();
     compTaskSpaceInput();
@@ -117,16 +120,17 @@ void Yumi::compForce2VelocityController(){
     velocityEE << 0, m_force-m_forceOP, 0;
     velocityEE *= m_kp;
     velocityEE =  (Eigen::Matrix3d::Identity() - m_modSelectVelMatrix) * velocityEE; // perform blending - transition from position control to force control
-    std::cout << "selectionmatrix force: " << (Eigen::Matrix3d::Identity() - m_modSelectVelMatrix) << std::endl;
-    std::cout << "selectionmatrix velocity: " << m_modSelectVelMatrix << std::endl;
-    std::cout << "velocityEE force: " << velocityEE << std::endl;
+    //std::cout << "selectionmatrix force: " << (Eigen::Matrix3d::Identity() - m_modSelectVelMatrix) << std::endl;
+    //std::cout << "selectionmatrix velocity: " << m_modSelectVelMatrix << std::endl;
+    //std::cout << "velocityEE force: " << velocityEE << std::endl;
     // transform the velocities computed in the ee frame to the world frame
     m_forceTaskSpaceInput = m_rotationMatrix.transpose() * velocityEE;
 }
 
 void Yumi::compIK(){
     Eigen::Matrix<double, 7, 1> jointVelocities;
-    Eigen::Matrix<double, 7, 1> nullSpaceVelocity = -m_inverseWeighing * m_nullSpaceGradient;
+    //Eigen::Matrix<double, 7, 1> nullSpaceVelocity = -m_inverseWeighing * m_nullSpaceGradient;
+    Eigen::Matrix<double, 7, 1> nullSpaceVelocity = m_nullspaceWeight * m_nullSpaceGradient;
 
 	jointVelocities = broccoli::core::math::solvePseudoInverseEquation(m_jacobian, m_inverseWeighing, m_effectiveTaskSpaceInput,
                      nullSpaceVelocity, m_activationFactorTaskSpace);
@@ -180,4 +184,44 @@ void Yumi::modifySelectionMatrix(){
 
 double Yumi::get_manipulabilityMeasure(){
     return m_manipulabilty;
+}
+
+void Yumi::computeManipulabilityGradient(){
+    // Eigen mainly supports 2D. 3D matrices are available in develop branches. We will use a container of 2D
+    // matrices here.
+    std::array<Eigen::Matrix<double, 6, 7>, 7> Jdq; // NOLINT
+    for (auto& matrix : Jdq) {
+        matrix = Eigen::Matrix<double, 6, 7>::Zero();
+    }
+    Eigen::Matrix<double, 3, 7> transJ = Eigen::Matrix<double, 3, 7>::Zero();
+    transJ = m_jacobian.block<3, 7>(0, 0);
+    Eigen::Matrix<double, 3, 7> rotJ = Eigen::Matrix<double, 3, 7>::Zero();
+    rotJ = m_jacobian.block<3, 7>(3, 0);
+    const int numOfJoints = 7;
+    for (int jj = 0; jj < numOfJoints; ++jj) {
+        for (int ii = jj; ii < numOfJoints; ++ii) {
+            Jdq.at(jj).block<3, 1>(0, ii) = rotJ.col(jj).cross(transJ.col(ii));
+            Jdq.at(jj).block<3, 1>(3, ii) = rotJ.col(jj).cross(rotJ.col(ii));
+            if (ii != jj) {
+                Jdq.at(ii).block<3, 1>(0, jj) = Jdq.at(jj).block<3, 1>(0, ii);
+            }
+        }
+    }
+    //return Jdq;
+
+	// Current cost.
+    double cost = sqrt((m_jacobian * m_jacobian.transpose()).determinant());
+    // Compute the manipulability gradient.
+    //Eigen::Matrix<double, 7, 1> gradient = Eigen::Matrix<double, 7, 1>::Zero();
+    for (int jj = 0; jj < 7; ++jj) {
+        m_nullSpaceGradient[jj] = cost * ((m_jacobian * m_jacobian.transpose()).inverse() * Jdq.at(jj) * m_jacobian.transpose()).trace();
+    }
+}
+
+void Yumi::set_additionalManipConstraint(bool flag){
+    m_additionalManipConstraint = flag;
+}
+
+void Yumi::set_nullspaceWeight(double nullspaceWeight){
+    m_nullspaceWeight = nullspaceWeight;
 }

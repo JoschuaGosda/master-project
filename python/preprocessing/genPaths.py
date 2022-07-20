@@ -183,7 +183,7 @@ for i, (r12,r22_) in enumerate(zip(dist_12, dist_22_)):
 # make data ready for export
 traj_data = np.hstack((p1m, v1, p2m, v2, ang, odot))
 # save data for application
-#np.save('./data/traj_data', traj_data)
+np.save('./data/traj_data', traj_data)
 
 
 # save data to decouple preprocessing and plotting
@@ -199,4 +199,4 @@ np.save(plot_path+'p2m_ref', p2m_ref)
 np.save(plot_path+'v1', v1)
 np.save(plot_path+'v2', v2)
 
-np.save('/home/joschua/Coding/forceControl/master-project/python/plots/postprocessing/R_01', R_01)
+#np.save('/home/joschua/Coding/forceControl/master-project/python/plots/postprocessing/R_01_250', R_01)

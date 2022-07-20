@@ -22,6 +22,11 @@ rate = 1.0/80.0
 yumi_right = invKin.Yumi("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf")
 yumi_left = invKin.Yumi("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf")
 
+yumi_right.set_additionalManipConstraint(True)
+#yumi_right.set_nullspaceWeight(100.0)
+yumi_left.set_additionalManipConstraint(True)
+#yumi_left.set_nullspaceWeight(100.0)
+
 manipulability_R = np.zeros((len(p1)))
 manipulability_L = np.zeros((len(p1)))
 manipulabilityMin_R = np.zeros((3, 3, 3))
@@ -43,19 +48,21 @@ myY_L = []
 myZ_L = []
 myMan_L = []
 
+smallestMan = []
+
 oldPos = np.zeros((3))
 newPos = np.zeros((3))
 
-for x in range(-10, 11, 10):
+for x in range(-20, 21, 5):
     # add 5 cm to every point of trajectory in x direction
     dx = np.array([x*0.01, 0.0, 0.0])
     dX = np.ones((len(p1), 3)) * dx # elementwise multiplication
     
-    for y in range(-10, 11, 10):
+    for y in range(-20, 21, 5):
         dy = np.array([0.0, y*0.01, 0.0])
         dY = np.ones((len(p1), 3)) * dy # elementwise multiplication
 
-        for z in range(-10, 11, 10):
+        for z in range(-10, 31, 5):
             dz = np.array([0.0, 0.0, z*0.01])
             dZ = np.ones((len(p1), 3)) * dz # elementwise multiplication
             p1_ = copy.copy(p1) + dX + dY + dZ
@@ -125,13 +132,22 @@ for x in range(-10, 11, 10):
             myZ_L.append(p1_[0, 2])
             myMan_L.append(np.min(manipulability_L))
 
-print("manipulability measure min right: ", manipulabilityMin_R)
-print("manipulability measure min left: ", manipulabilityMin_L)
+            if (np.min(manipulability_R) < np.min(manipulability_L)): # if right is smaller
+                smallestMan.append(np.min(manipulability_R))
+            else:
+                smallestMan.append(np.min(manipulability_L))
+
+#print("manipulability measure min right: ", manipulabilityMin_R)
+#print("manipulability measure min left: ", manipulabilityMin_L)
+
+plot_path = '/home/joschua/Coding/forceControl/master-project/python/plots/taskSpacePlacement/'
+np.save(plot_path +'myX_L_nullgradient', myX_L)
+np.save(plot_path +'myY_L_nullgradient', myY_L)
+np.save(plot_path +'myZ_L_nullgradient', myZ_L)
+np.save(plot_path +'smallestMan_nullgradient', smallestMan)
 
 
-
-
-def scatter3d(x,y,z, cs, colorsMap='jet'):
+""" def scatter3d(x,y,z, cs, colorsMap='jet'):
     cm = plt.get_cmap(colorsMap)
     cNorm = matplotlib.colors.Normalize(vmin=min(cs), vmax=max(cs))
     scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
@@ -140,10 +156,10 @@ def scatter3d(x,y,z, cs, colorsMap='jet'):
     ax.scatter(x, y, z, c=scalarMap.to_rgba(cs))
     scalarMap.set_array(cs)
     fig.colorbar(scalarMap)
-    plt.show()
+    plt.show() """
 
 
-scatter3d(np.array(myX_R), np.array(myY_R), np.array(myZ_R), np.array(myMan_R))
-scatter3d(np.array(myX_L), np.array(myY_L), np.array(myZ_L), np.array(myMan_L))
-scatter3d(np.array(myX_L), np.array(myY_L), np.array(myZ_L), np.array(myMan_L)+np.array(myMan_R))
+#scatter3d(np.array(myX_R), np.array(myY_R), np.array(myZ_R), np.array(myMan_R))
+#scatter3d(np.array(myX_L), np.array(myY_L), np.array(myZ_L), np.array(myMan_L))
+#scatter3d(np.array(myX_L), np.array(myY_L), np.array(myZ_L), np.array(myMan_L)+np.array(myMan_R))
 # do not add, but search iterate through and choose index where both array entries are higher

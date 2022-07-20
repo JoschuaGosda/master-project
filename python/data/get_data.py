@@ -2,6 +2,23 @@ import numpy as np
 import copy
 from enum import Enum
 
+def get_step():
+    p1 = np.zeros((800, 3))
+    v1 = np.zeros((800, 3))
+    p2 = np.zeros((800, 3))
+    v2 = np.zeros((800, 3))
+    phi_delta = np.zeros((800, 3))
+    dphi = np.zeros((800, 3))
+
+    p1[50:800, 0] = 0.01
+    v1[49:50, 0]  = 0.01/(1.0/80.0) # equals 0.8 m/s
+
+    p2[50:800, 0] = 0.01
+    p2[:, 2] = 0.4 # corresponds to -0.4 in y axis after the placement to yumi workspace
+    v2[49:50, 0]  = 0.01/(1.0/80.0) # equals 0.8 m/s
+
+    return p1, v1, p2, v2, phi_delta, dphi
+
 def get_trajectory():
     try:
         data = np.load('data/traj_data.npy')
