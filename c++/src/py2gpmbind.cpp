@@ -26,5 +26,6 @@ PYBIND11_MODULE(invKin, m) {
        .def("set_additionalManipConstraint", &Yumi::set_additionalManipConstraint)
        .def("set_nullspaceWeight", &Yumi::set_nullspaceWeight)
        .def("set_driftCompGain", &Yumi::set_driftCompGain)
+       .def("set_sampleTime", &Yumi::set_sampleTime)
        .def("set_force", &Yumi::set_force);
 	}

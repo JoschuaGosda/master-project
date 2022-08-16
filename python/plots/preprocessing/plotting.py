@@ -28,42 +28,51 @@ plt.rcParams.update({
     })
 
  # do plots for tcp1
-""" #fig = plt.figure()
-fig = plt.figure(figsize=(6.25, 2))
-ax = fig.add_subplot(111)
+ #fig = plt.figure()
+fig = plt.figure(figsize=(6, 4))
+ax = fig.add_subplot(211)
+ax2 = fig.add_subplot(212)
 ax.scatter(p1[:,0]*1000, p1[:,1]*1000-53.7, label='$p_{1*}$', color='#005293')
 ax.scatter(pos1[:,0]*1000, pos1[:,1]*1000-53.7, marker="x", label='$p_1$', color='#80a9c9')
 # part view
-ax.set_xlim(10.8, 14.8)
-ax.set_ylim(-4.4, -1.95)
+ax2.scatter(p1[:,0]*1000, p1[:,1]*1000-53.7, label='$p_{1*}$', color='#005293')
+ax2.scatter(pos1[:,0]*1000, pos1[:,1]*1000-53.7, marker="x", label='$p_1$', color='#80a9c9')
+ax2.set_xlim(10.8, 14.8)
+ax2.set_ylim(-4.4, -1.95)
+ax2.set_ylabel('$y_1$')
 #  overview
-#ax.set_xlim(-10, 175)
-#ax.set_ylim(-10, 25)
-ax.set_xlabel('$x_1$')
+ax.set_xlim(-10, 175)
+ax.set_ylim(-10, 25)
+ax2.set_xlabel('$x_1$')
 ax.set_ylabel('$y_1$')
-ax.legend()
-#ax.add_patch(Rectangle((10.8, -4.4), 4, 2.45,
-#             edgecolor = 'black',
-#             #facecolor = 'blue',
-#             fill=False,
-#             lw=1))
+labels = [ '$p_{1*}$', '$p_1$']
+fig.legend( labels=labels,
+           loc="upper center", ncol=2)
+ax.add_patch(Rectangle((10.8, -4.4), 4, 2.45,
+             edgecolor = 'black',
+             #facecolor = 'blue',
+             fill=False,
+             lw=1))
+ax.set_xticks([0, 50, 100, 150])
+fig.tight_layout()
+fig.subplots_adjust(top=0.9)
 plt.show()
 
-fig.tight_layout()
-#fig.savefig('/home/joschua/Documents/Studium/TUM/Thesis/documentation/thesis/myWorkFiles/AMStudentThesis/figures/plots/lefttraj_part.pgf', format='pgf')
- """
 
-fig = plt.figure(figsize=(6.25, 2))
+#fig.savefig('/home/joschua/Documents/Studium/TUM/Thesis/documentation/thesis/myWorkFiles/AMStudentThesis/figures/plots/lefttraj_part.pgf', format='pgf')
+
+
+fig = plt.figure(figsize=(6, 2))
 ax = fig.add_subplot(111)
 v1_abs = np.array(list(map(lambda x: norm(x, 2), v1))).reshape(len(v1[:,0]),1) 
 v2_abs = np.array(list(map(lambda x: norm(x, 2), v2))).reshape(len(v2[:,0]),1) 
 timeline = np.linspace(0, (len(v1[:,0])-1)*1.0/80.0, len(v1[:,0])).reshape(len(v1[:,0]),1)
-v_des = np.ones((len(timeline), 1))* 1000
-ax.plot( timeline, v1_abs*1000*60, label='$v_1$')
-ax.plot( timeline, v2_abs*1000*60, label='$v_2$')
-ax.plot( timeline, v_des, linestyle='dashed', label='$v_f$')
-ax.set_xlabel('s')
-ax.set_ylabel('mm/min')
+v_des = np.ones((len(timeline), 1))* 300
+ax.plot( timeline, v1_abs*1000*60, label='$v_L$')
+ax.plot( timeline, v2_abs*1000*60, label='$v_R$')
+ax.plot( timeline, v_des, linestyle='dashed', label='$v_{f,d}$', color='#808080')
+ax.set_xlabel('time in s')
+ax.set_ylabel('$v_f$ in mm/min')
 ax.legend()
 #plt.ylim(bottom=0)
 fig.tight_layout()
@@ -99,7 +108,7 @@ plt.show()
 
 
 # plot the data for visualisation
-fig = plt.figure(figsize=(3, 3))
+fig = plt.figure(figsize=(2.7, 2.7))
 ax = fig.add_subplot(111, projection='3d')
 #ax.plot(p1m[:,0]*1000, p1m[:,2]*1000, p1m[:,1]*1000-53.7, color='#005293', label='$p_{1*}$')
 ax.plot(p2m_ref[:,0]*1000,p2m_ref[:,2]*1000, p2m_ref[:,1]*1000-53.7, label='$p_2$')
@@ -110,10 +119,11 @@ ax.set_ylim(405, 395)#axes were switched to better rotate plot is z
 ax.set_zlim(-50,15)#axes were switched to better rotate plot is y
 #ax.set_zlim(-15,25)
 ax.view_init(elev=13., azim=36.)
-ax.set_xlabel('$x_2$')
-ax.set_ylabel('$z_2$')
-ax.set_zlabel('$y_2$')
+ax.set_xlabel('$x_1$')
+ax.set_ylabel('$z_1$')
+ax.set_zlabel('$y_1$')
 ax.legend()
+ax.set_yticks([402, 400, 398    , 396])
+fig.tight_layout()  
 plt.show() 
 
-fig.tight_layout()  

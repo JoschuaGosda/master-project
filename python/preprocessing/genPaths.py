@@ -21,23 +21,13 @@ with open('preprocessing/gcode.txt') as f:
             if row > 0:
                 pos[col, row-1] = np.asarray(str[1:len(str)]) # cut the first element of string which is not needed
 
-# goal must be to have both tcp positions in the world frame, due to different approach with fixed wire length
-# second tcp must be corrected. Can be calculated from the first one based on orientation and length of wire. 
-# 1) extract wires orientation from 4 axis approach - two axis with x-y coordinates and fixed distance (in z-direction)
-# 2) use the orienation angles to do a rotation transformation and walk fixed distance in wires axis
-
 # extract original x & y of both tcp's
 pos_split = np.split(pos, 2, axis=1)
 pos1, pos2 = pos_split[0]*0.001, pos_split[1]*0.001 # transform to SI-units - [m]
 
-# TODO: compute trajectory based on path of g-code
 # set a cutting speed, sample rate and compute necessary
-# position at every time step
 c_speed = 300 * 0.001 * 1/60 # define cutting speed as 300 mm/min [m/s]
 st = 1.0/80.0 # highest possible sample time - 250 Hz
-
-# modificatin to delete in order to check angles in RS
-# pos2 = pos2 + np.array([0, 0.1]) # get 10 cm higher
 
 # initialize list with first element
 p1x = []
@@ -58,7 +48,6 @@ for i in range(1, len(pos1[:,0])):
         dp2_len = norm(dp2, 2) 
         # number of section in between original points
         nr_sect = round(dp1_len/(c_speed*st))
-        #print(len(p1x), "+ ", nr_sect)
 
         # append everthing to lists       
         for j in range(nr_sect):
@@ -70,7 +59,6 @@ for i in range(1, len(pos1[:,0])):
             p2y.append(pos2[i-1,1] + j* dp2[0,1] * 1/nr_sect)
     
 
-# TODO: plot and test for different cutting speeds and check functionality
 p1 = np.hstack((np.array(p1x).reshape(len(p1x),1), np.array(p1y).reshape(len(p1y),1)))
 p2 = np.hstack((np.array(p2x).reshape(len(p2x),1), np.array(p2y).reshape(len(p2y),1)))
 
@@ -86,7 +74,7 @@ v1 = np.hstack((v1, np.zeros((len(v1[:,0]), 1))))
 # number of points in paths
 pNum = len(p1[:,0])
 # length of wire, defined in 4-axis setup 
-wLen = 0.4 
+wLen = 0.40
 z1 = np.zeros((pNum,1))
 z2 = np.ones((pNum,1)) * wLen
 # append z axis to position vectors
@@ -127,7 +115,6 @@ for i in range(pNum):
     # rotation matrix
     # self defined convention: rotate around y axis, then around x axis the get from  initial frame to wire frame
     # rotation from initial to first frame (z-axis aligned with wire)
-    #R01 = Ry @ Rx
     R01 = Rx @ Ry
     # rotation from first frame to initial frame
     R10 = np.transpose(R01)
@@ -185,7 +172,6 @@ traj_data = np.hstack((p1m, v1, p2m, v2, ang, odot))
 # save data for application
 np.save('./data/traj_data', traj_data)
 
-
 # save data to decouple preprocessing and plotting
 # p1, pos1, p2, pos2, p2m_ref, p1m , p2m, v1
 plot_path = '/home/joschua/Coding/forceControl/master-project/python/plots/preprocessing/'
@@ -199,4 +185,4 @@ np.save(plot_path+'p2m_ref', p2m_ref)
 np.save(plot_path+'v1', v1)
 np.save(plot_path+'v2', v2)
 
-#np.save('/home/joschua/Coding/forceControl/master-project/python/plots/postprocessing/R_01_250', R_01)
+#np.save('/home/joschua/Coding/forceControl/master-project/python/plots/postprocessing/R_01_900', R_01)

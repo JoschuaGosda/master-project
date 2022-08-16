@@ -71,7 +71,7 @@ error_right = np.zeros((len(p1[:,0]),6))
 jointVelocities_right = np.zeros((len(p1[:,0]),7))
 
 jointAngles = np.array([-110.0, 29.85, 35.92, 49.91, 117.0, 123.0, -117.0]) * np.pi/180.0 
-jointVelocities = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+jointVelocities_ = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
 desPose_old = np.concatenate((p2[0,: ], phi_delta[0, :]), axis=0) 
 
@@ -79,7 +79,7 @@ desPose_old = np.concatenate((p2[0,: ], phi_delta[0, :]), axis=0)
 for index, (pos, vel, phi, phi_dot) in enumerate(zip(p2, v2, phi_delta, dphi)): # loop through all the desired position of left arm
     desPose = np.concatenate((pos, phi), axis=0) 
     desVelocities = np.concatenate((vel, phi_dot), axis=0) 
-    yumi_right.set_jointValues(jointAngles, jointVelocities)
+    yumi_right.set_jointValues(jointAngles, jointVelocities_)
     yumi_right.set_desPoseVel(desPose_old, desVelocities)
     yumi_right.process()
 
@@ -87,9 +87,9 @@ for index, (pos, vel, phi, phi_dot) in enumerate(zip(p2, v2, phi_delta, dphi)): 
     computedPose_right[index, :] = yumi_right.get_pose() # resulting pose with joint values from IK
     
     if index > 0:
-        jointVelocities = (compJointAngles_left[index, :] - compJointAngles_left[index-1, :])/dt 
+        jointVelocities_ = (compJointAngles_right[index, :] - compJointAngles_right[index-1, :])/dt 
     error_right[index, :] = desPose - computedPose_right[index, :]
-    jointVelocities_right[index, :] = jointVelocities
+    jointVelocities_right[index, :] = jointVelocities_
     jointAngles = compJointAngles_right[index, :]  
 
     # save desired pose to give it to ik in the next iteration since drift compensation must consider if current task space pose is the old desired task space pose

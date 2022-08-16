@@ -137,29 +137,9 @@ for x in range(-20, 21, 5):
             else:
                 smallestMan.append(np.min(manipulability_L))
 
-#print("manipulability measure min right: ", manipulabilityMin_R)
-#print("manipulability measure min left: ", manipulabilityMin_L)
-
 plot_path = '/home/joschua/Coding/forceControl/master-project/python/plots/taskSpacePlacement/'
 np.save(plot_path +'myX_L_nullgradient', myX_L)
 np.save(plot_path +'myY_L_nullgradient', myY_L)
 np.save(plot_path +'myZ_L_nullgradient', myZ_L)
 np.save(plot_path +'smallestMan_nullgradient', smallestMan)
 
-
-""" def scatter3d(x,y,z, cs, colorsMap='jet'):
-    cm = plt.get_cmap(colorsMap)
-    cNorm = matplotlib.colors.Normalize(vmin=min(cs), vmax=max(cs))
-    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
-    fig = plt.figure()
-    ax = Axes3D(fig)
-    ax.scatter(x, y, z, c=scalarMap.to_rgba(cs))
-    scalarMap.set_array(cs)
-    fig.colorbar(scalarMap)
-    plt.show() """
-
-
-#scatter3d(np.array(myX_R), np.array(myY_R), np.array(myZ_R), np.array(myMan_R))
-#scatter3d(np.array(myX_L), np.array(myY_L), np.array(myZ_L), np.array(myMan_L))
-#scatter3d(np.array(myX_L), np.array(myY_L), np.array(myZ_L), np.array(myMan_L)+np.array(myMan_R))
-# do not add, but search iterate through and choose index where both array entries are higher

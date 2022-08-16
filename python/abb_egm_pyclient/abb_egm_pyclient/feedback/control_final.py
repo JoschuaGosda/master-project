@@ -41,10 +41,11 @@ p1, p2 = place_trajectory(p1_start_des, p1, p2)
 # setup for UDP connection
 UDP_PORT_LEFT = 6510
 UDP_PORT_RIGHT = 6511
-rate = 80
+
 
 # take the first desired taskSpaceInput for the right arm and simulate force sensor data 
 #translation_R_start = copy.copy(p2[0, :])
+#syncTranslation_R = np.array([0.3, -0.18,  0.2]) # starting pose synched with robot
 syncTranslation_R = np.array([0.3, -0.2,  0.2]) # starting pose synched with robot
 #rotation_R_start = copy.copy(phi_delta[0, :])
 syncRotation_R = np.array([0, 0, 0])
@@ -60,15 +61,18 @@ desPose_L_start = np.concatenate((p1[0, :], phi_delta[0, :]), axis=0)
 egm_client_R = EGMClient(port=UDP_PORT_RIGHT)
 egm_client_L = EGMClient(port=UDP_PORT_LEFT)
 
+rate = 80.0
 yumi_right = invKin.Yumi("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf")
 yumi_right.set_operationPoint(4.0) 
 yumi_right.set_kp(0.05)
 yumi_right.set_hybridControl(False)
 yumi_right.set_transitionTime(3.0)
 yumi_right.set_additionalManipConstraint(True)
+yumi_right.set_sampleTime(1.0/rate)
 
 yumi_left = invKin.Yumi("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf")
 yumi_left.set_additionalManipConstraint(True)
+yumi_left.set_sampleTime(1.0/rate)
 
 desVelocities_R_start = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 jointVelocities_R = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -137,6 +141,8 @@ log_compJoints_L = np.zeros((traj_samples, 7))
 
 log_force = np.zeros((traj_samples, 1))
 
+log_compTime = np.zeros((traj_samples, 1))
+
 print("\n Force control only to tension the wire...")
 
 foamCutting.start_syncronizing()
@@ -144,10 +150,10 @@ force = 0
 i = 0
 while True and arduino.isOpen():
     # check for new force data
-    if arduino.in_waiting: # get the number of bytes in the input buffer
+    """ if arduino.in_waiting: # get the number of bytes in the input buffer
         packet = arduino.readline() # type: bytes  
         str_receive = packet.decode('utf-8').rstrip('\n')
-        force = float(str_receive)/1000.0 # mN to Newton 
+        force = float(str_receive)/1000.0 # mN to Newton   """
 
     if foamCutting.is_moveToStartPose:
         if (time.time() - timestamp) >= (1.0/rate):
@@ -196,7 +202,7 @@ while True and arduino.isOpen():
                 
     elif (foamCutting.is_mountWire):
         if keyboard.is_pressed('enter'):
-            yumi_right.set_hybridControl(True)
+            #yumi_right.set_hybridControl(True)
             foamCutting.start_tensioning()
 
 
@@ -240,8 +246,8 @@ while True and arduino.isOpen():
             jointAngles_L_old = copy.copy(jointAngles_L)
 
             i = i+1
-            if (force > 3) and keyboard.is_pressed('enter'):
-            #if keyboard.is_pressed('enter'):
+            #if (force > 3.6) and keyboard.is_pressed('enter'):
+            if keyboard.is_pressed('enter'):
                 i = 0 # reset counter
                 print("Changing to hybrid control now...")
                 foamCutting.start_cutting()
@@ -315,6 +321,10 @@ while True and arduino.isOpen():
             jointAngles_R_old = copy.copy(jointAngles_R)
             i = i + 1 
             pbar.update(1)
+            log_compTime[i, :] = time.time() - timestamp
+
+            if keyboard.is_pressed('s'):
+                break
             
             if (i >= (traj_samples-1)):
                 pbar.close()
@@ -323,7 +333,7 @@ while True and arduino.isOpen():
 
 
 # check if end pose for right arm has been reached
-n = 0
+""" n = 0
 while n < 10:
     robot_msg_R = egm_client_R.receive_msg()
     if robot_msg_R.mciConvergenceMet:
@@ -348,11 +358,11 @@ while n < 10:
     n += 1
     time.sleep(0.1)
 else:
-    raise TimeoutError(f"Joint positions for the left arm did not converge.")
+    raise TimeoutError(f"Joint positions for the left arm did not converge.") """
 
 
 
-experimentLogs = np.hstack((p2, phi_delta, log_compPose_R, log_realPose_R, log_compJoints_R, log_realJoints_R, log_force, p1, log_compJoints_R, log_realPose_L, log_compJoints_L, log_realJoints_L, log_abbPos_R, log_abbPos_L))
+experimentLogs = np.hstack((p2, phi_delta, log_compPose_R, log_realPose_R, log_compJoints_R, log_realJoints_R, log_force, p1, log_compJoints_R, log_realPose_L, log_compJoints_L, log_realJoints_L, log_abbPos_R, log_abbPos_L, log_compTime))
 #experimentLogs = np.hstack((p2, phi_delta, log_realPose_R,  p1, log_realPose_L))
 
-#np.save('./plots/force_control/refKp0.05-Op4_v3', experimentLogs)
+#np.save('./plots/control_positionv2/v2-300-351015_S900', experimentLogs)

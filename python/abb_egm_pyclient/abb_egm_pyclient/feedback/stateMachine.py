@@ -1,9 +1,6 @@
 from statemachine import StateMachine, State
 
 class FoamCuttingMachine(StateMachine):
-    # green = State('Green', initial=True)
-    # yellow = State('Yellow')
-    # red = State('Red')
 
     # define states
     standby = State('Standby', initial=True)
@@ -33,14 +30,3 @@ class FoamCuttingMachine(StateMachine):
 
     def on_enter_standby(self):
         print('State changed to standby')
-
-
-    # slowdown = green.to(yellow)
-    # stop = yellow.to(red)
-    # go = red.to(green)
-
-    # states
-    # standby
-    # moveToStartPose
-    # tensionWire
-    # cutting

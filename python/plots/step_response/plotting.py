@@ -14,7 +14,7 @@ e = (p1_des - p1_is)
 #noSamples = len(p1_desf80)  
 noSamples80 = len(p1_des)   
 
-time80 = np.linspace(0, round(1.0/80.0 * noSamples80), num=noSamples80)
+time80 = np.linspace(0, round(1.0/80.0 * noSamples80), num=noSamples80) - 0.6135
 
 # use self-defined tum-cycler for TUM-blue colors
 plt.style.use('mylatex')
@@ -29,21 +29,22 @@ plt.rcParams.update({
     })
 
 # error plot
-fig = plt.figure()
+fig = plt.figure(figsize=(6, 2))
 
-ax1 = fig.add_subplot(311)
-ax2 = fig.add_subplot(312)
+
+#ax1 = fig.add_subplot(311)
+ax2 = fig.add_subplot(111)
 #ax3 = fig.add_subplot(313)
 
-ax1.plot(time80 [30:-10], e     [30:-10, 0])
-ax2.plot(time80 [30:-10], p1_des     [30:-10, 0])
-ax2.plot(time80 [30:-10], p1_is     [30:-10, 0])
+#ax1.plot(time80 [30:-10], e     [30:len(e)/5, 0])
+ax2.plot(time80 [30:round(len(e)/5)], p1_des     [30:round(len(e)/5), 0])
+ax2.plot(time80 [30:round(len(e)/5)], p1_is     [30:round(len(e)/5), 0])
 
 
 #ax1.set_title('position error in EE frame')
-ax1.set_ylabel('$x$ in mm')
+#ax1.set_ylabel('$x$ in mm')
 ax2.set_ylabel('$x$ in mm')
-ax2.set_xlabel('s')
+ax2.set_xlabel('time in s')
 
 #labels = ["case 1", "case 2", "case 3", "case 4"]
 #fig.legend( labels=labels,

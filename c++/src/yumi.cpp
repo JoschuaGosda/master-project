@@ -30,7 +30,7 @@ void Yumi::doForwardKinematics(){
     rl::math::Transform t = kinematic->getOperationalPosition(0);
 	m_position = t.translation();
 	m_orientation = t.rotation().eulerAngles(2, 1, 0).reverse();
-    m_rotationMatrix = t.rotation(); // rotation from world frame to ee frame
+    m_rotationMatrix = t.rotation(); // rotation from task frame to ee frame
     m_jacobian = kinematic->getJacobian();
     m_manipulabilty = kinematic->calculateManipulabilityMeasure();
 }
@@ -76,11 +76,12 @@ void Yumi::compTaskSpaceInput(){
 	}
 	// calculate delta between quaternions
 	Eigen::Quaterniond errorQuaternion = currentOrientation.inverse() * desiredOrientation;
-	Eigen::Vector3d errorRotationInWorldFrame = currentOrientation * errorQuaternion.vec();
+	Eigen::Vector3d errorRotationInTaskFrame = currentOrientation * errorQuaternion.vec();
 
-    m_effectiveTaskSpaceInput.head(3) = m_modSelectVelMatrix * (m_driftCompGain/m_sampleTime * (m_desPosition - m_position) + m_desPositionDot) 
+    // rotate the profile into ee frame, then select the correct directions for position controll and then transform back to world frame
+    m_effectiveTaskSpaceInput.head(3) = m_rotationMatrix.transpose() * m_modSelectVelMatrix * m_rotationMatrix*(m_driftCompGain/m_sampleTime * (m_desPosition - m_position) + m_desPositionDot) 
 										 + m_forceTaskSpaceInput;
-	m_effectiveTaskSpaceInput.tail(3) = m_driftCompGain/m_sampleTime * errorRotationInWorldFrame + m_desOrientationDot;
+	m_effectiveTaskSpaceInput.tail(3) = m_driftCompGain/m_sampleTime * errorRotationInTaskFrame + m_desOrientationDot;
 
 }
 
@@ -120,10 +121,7 @@ void Yumi::compForce2VelocityController(){
     velocityEE << 0, m_force-m_forceOP, 0;
     velocityEE *= m_kp;
     velocityEE =  (Eigen::Matrix3d::Identity() - m_modSelectVelMatrix) * velocityEE; // perform blending - transition from position control to force control
-    //std::cout << "selectionmatrix force: " << (Eigen::Matrix3d::Identity() - m_modSelectVelMatrix) << std::endl;
-    //std::cout << "selectionmatrix velocity: " << m_modSelectVelMatrix << std::endl;
-    //std::cout << "velocityEE force: " << velocityEE << std::endl;
-    // transform the velocities computed in the ee frame to the world frame
+    // transform the velocities computed in the ee frame to the task space
     m_forceTaskSpaceInput = m_rotationMatrix.transpose() * velocityEE;
 }
 

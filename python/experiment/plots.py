@@ -34,7 +34,27 @@ ax1.set_xlabel('samples')
 plt.show()
 
 
+y = data2[2500:]
 
+n = len(y) # length of the signal
+k = np.arange(n)
+T = n/80
+frq = k/T # two sides frequency range
+frq = frq[:len(frq)//2] # one side frequency range
+
+Y = np.fft.fft(y)/n # dft and normalization
+Y = Y[:n//2]
+
+### new
+fig = plt.figure()
+
+ax3 = fig.add_subplot(111)
+ax3.plot(frq, abs(Y), label='noise with const weight')
+#ax3.plot(frq015, abs(Y015), label='$K_p=0.15$ ')
+ax3.set_xlabel('freq in Hz')
+ax3.set_ylabel('magnitude in dB')
+plt.xscale('log')
+ax3.legend()
 
 
 
