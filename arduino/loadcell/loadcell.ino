@@ -10,6 +10,7 @@ const float calibration_weight = 4900.0;
 float zero_reading, load_reading;
 
 const float calibration_factor = -99.52;
+const float calibration_offset = 2674;
 
 
 HX711 scale;
@@ -28,9 +29,10 @@ void setup() {
   delay(3);
 
   // determine the offset - setup: no load
-  scale.tare(10);  // sets the offset value within scale to current value of reading
-  zero_reading = scale.  //average over 10 vales
-
+  //scale.tare(10);  // sets the offset value within scale to current value of reading
+  //Serial.print("The offset is:  ");
+  //Serial.println(scale.get_offset());  //average over 10 vales
+  scale.set_offset(calibration_offset);
 
   //delay(2);
   //Serial.println("mount the known weight to the load cell and press ENTER to proceed with calibration");

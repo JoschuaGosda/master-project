@@ -9,7 +9,7 @@ import copy
 import numpy as np
 from abb_egm_pyclient import EGMClient
 import libs.invKin as invKin
-from data.get_data import get_trajectory, transform2yumi_workspace, place_trajectory, logic2abb
+from data.get_data import get_trajectory, transform2yumi_workspace, place_trajectory, logic2abb, get_step
 from matplotlib import pyplot as plt
 import serial.tools.list_ports
 from tqdm import tqdm
@@ -24,24 +24,28 @@ def get_realJointAngles(egm_client):
     joint7 = robot_msg.feedBack.externalJoints.joints[0]
     conf.insert(2, joint7)
     jointAngles = np.radians(np.array(conf))
-    return jointAngles
+    pose = np.array([robot_msg.feedBack.cartesian.pos.x, robot_msg.feedBack.cartesian.pos.y, robot_msg.feedBack.cartesian.pos.z])
+    return jointAngles, pose
 
 # READ IN THE TRAJECTORY
 # get the data in the yumi workspace
 p1, v1, p2, v2, phi_delta, dphi = get_trajectory()
+#p1, v1, p2, v2, phi_delta, dphi = get_step()
 p1, v1, p2, v2, phi_delta, dphi = transform2yumi_workspace(p1, v1, p2, v2, phi_delta, dphi)
 
 # define staring postition in workspace for left arm - found by try and error in RS
-p1_start_des = np.array([0.32, 0.3, 0.1]) # synced fine pose was np.array([0.3, 0.2, 0.2])
+p1_start_des = np.array([0.35, 0.1, 0.15]) # synced fine pose was 
+#p1_start_des = np.array([0.31, 0.2, 0.2])
 p1, p2 = place_trajectory(p1_start_des, p1, p2)
 
 # setup for UDP connection
 UDP_PORT_LEFT = 6510
 UDP_PORT_RIGHT = 6511
-rate = 80
+
 
 # take the first desired taskSpaceInput for the right arm and simulate force sensor data 
 #translation_R_start = copy.copy(p2[0, :])
+#syncTranslation_R = np.array([0.3, -0.18,  0.2]) # starting pose synched with robot
 syncTranslation_R = np.array([0.3, -0.2,  0.2]) # starting pose synched with robot
 #rotation_R_start = copy.copy(phi_delta[0, :])
 syncRotation_R = np.array([0, 0, 0])
@@ -57,13 +61,18 @@ desPose_L_start = np.concatenate((p1[0, :], phi_delta[0, :]), axis=0)
 egm_client_R = EGMClient(port=UDP_PORT_RIGHT)
 egm_client_L = EGMClient(port=UDP_PORT_LEFT)
 
+rate = 80.0
 yumi_right = invKin.Yumi("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_right.urdf")
-yumi_right.set_operationPoint(5.0) 
+yumi_right.set_operationPoint(4.0) 
 yumi_right.set_kp(0.05)
 yumi_right.set_hybridControl(False)
 yumi_right.set_transitionTime(3.0)
+yumi_right.set_additionalManipConstraint(True)
+yumi_right.set_sampleTime(1.0/rate)
 
 yumi_left = invKin.Yumi("/home/joschua/Coding/forceControl/master-project/c++/models/urdf/yumi_left.urdf")
+yumi_left.set_additionalManipConstraint(True)
+yumi_left.set_sampleTime(1.0/rate)
 
 desVelocities_R_start = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 jointVelocities_R = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -101,7 +110,7 @@ i = 0
 force = 0.0 # 0.5 [N] seems to be a good value for the control
 timestamp = time.time()
 traj_samples = len(p1[:, 0]) 
-moveToStartVel = 0.005
+moveToStartVel = 0.05
 
 # delta is for both arms the same
 poseDelta = desPose_R_start - syncPose_R
@@ -118,11 +127,13 @@ toStartVel_R = (toStartPose_R[1, :] - toStartPose_R[0, :]) * rate
 toStartVel_L = (toStartPose_L[1, :] - toStartPose_L[0, :]) * rate
 
 # arrays to store the results for later plotting
+log_abbPos_R = np.zeros((traj_samples, 3))
 log_realPose_R = np.zeros((traj_samples, 6))
 log_compPose_R = np.zeros((traj_samples, 6))
 log_realJoints_R = np.zeros((traj_samples, 7))
 log_compJoints_R = np.zeros((traj_samples, 7))
 
+log_abbPos_L = np.zeros((traj_samples, 3))
 log_realPose_L = np.zeros((traj_samples, 6))
 log_compPose_L = np.zeros((traj_samples, 6))
 log_realJoints_L = np.zeros((traj_samples, 7))
@@ -130,25 +141,27 @@ log_compJoints_L = np.zeros((traj_samples, 7))
 
 log_force = np.zeros((traj_samples, 1))
 
+log_compTime = np.zeros((traj_samples, 1))
+
 print("\n Force control only to tension the wire...")
 
 foamCutting.start_syncronizing()
-
+force = 0
 i = 0
 while True and arduino.isOpen():
     # check for new force data
-    if arduino.in_waiting: # get the number of bytes in the input buffer
+    """ if arduino.in_waiting: # get the number of bytes in the input buffer
         packet = arduino.readline() # type: bytes  
         str_receive = packet.decode('utf-8').rstrip('\n')
-        force = float(str_receive)/1000.0 # mN to Newton
+        force = float(str_receive)/1000.0 # mN to Newton   """
 
     if foamCutting.is_moveToStartPose:
         if (time.time() - timestamp) >= (1.0/rate):
             timestamp = time.time()
 
             # get the current joints angles for the right arm
-            jointAngles_R = get_realJointAngles(egm_client_R)
-            jointAngles_L = get_realJointAngles(egm_client_L)
+            jointAngles_R, _posR = get_realJointAngles(egm_client_R)
+            jointAngles_L, _posL= get_realJointAngles(egm_client_L)
 
             # compute the resulting jointVelocities
             if i > 0:
@@ -189,7 +202,7 @@ while True and arduino.isOpen():
                 
     elif (foamCutting.is_mountWire):
         if keyboard.is_pressed('enter'):
-            yumi_right.set_hybridControl(True)
+            #yumi_right.set_hybridControl(True)
             foamCutting.start_tensioning()
 
 
@@ -199,8 +212,8 @@ while True and arduino.isOpen():
             timestamp = time.time()
 
             # get the current joints angles for the right arm
-            jointAngles_R = get_realJointAngles(egm_client_R)
-            jointAngles_L = get_realJointAngles(egm_client_L)
+            jointAngles_R, _posR = get_realJointAngles(egm_client_R)
+            jointAngles_L, _posL = get_realJointAngles(egm_client_L)
 
             # compute the resulting jointVelocities
             if i > 0:
@@ -233,7 +246,8 @@ while True and arduino.isOpen():
             jointAngles_L_old = copy.copy(jointAngles_L)
 
             i = i+1
-            if (force > 0.65) and keyboard.is_pressed('enter'):
+            #if (force > 3.6) and keyboard.is_pressed('enter'):
+            if keyboard.is_pressed('enter'):
                 i = 0 # reset counter
                 print("Changing to hybrid control now...")
                 foamCutting.start_cutting()
@@ -252,12 +266,16 @@ while True and arduino.isOpen():
             phi_dot = dphi[i, :]
 
             # get the current joints angles for the left arm
-            jointAngles_L = get_realJointAngles(egm_client_L)
+            jointAngles_L, abb_posL = get_realJointAngles(egm_client_L)
             log_realJoints_L[i, :] = jointAngles_L
+            log_abbPos_L[i, :] = abb_posL
 
             # get the current joints angles for the right arm
-            jointAngles_R = get_realJointAngles(egm_client_R)
+            jointAngles_R, abb_posR = get_realJointAngles(egm_client_R)
             log_realJoints_R[i, :] = jointAngles_R
+            log_abbPos_R[i, :] = abb_posR
+
+            #print("getting egm messages takes " + str(time.time() - timestamp))
 
             # compute the resulting jointVelocities
             if i > 0:
@@ -296,11 +314,17 @@ while True and arduino.isOpen():
             egm_client_L.send_planned_configuration(logic2abb(des_conf_L))
             egm_client_R.send_planned_configuration(logic2abb(des_conf_R))
 
+            #print("time for egm message + IK takes " + str(time.time() - timestamp))
+
             # save joint values to compute joint velocities in the next iteration
             jointAngles_L_old = copy.copy(jointAngles_L)
             jointAngles_R_old = copy.copy(jointAngles_R)
             i = i + 1 
             pbar.update(1)
+            log_compTime[i, :] = time.time() - timestamp
+
+            if keyboard.is_pressed('s'):
+                break
             
             if (i >= (traj_samples-1)):
                 pbar.close()
@@ -309,7 +333,7 @@ while True and arduino.isOpen():
 
 
 # check if end pose for right arm has been reached
-n = 0
+""" n = 0
 while n < 10:
     robot_msg_R = egm_client_R.receive_msg()
     if robot_msg_R.mciConvergenceMet:
@@ -334,8 +358,11 @@ while n < 10:
     n += 1
     time.sleep(0.1)
 else:
-    raise TimeoutError(f"Joint positions for the left arm did not converge.")
+    raise TimeoutError(f"Joint positions for the left arm did not converge.") """
 
 
-experimentLogs = np.hstack((p2, phi_delta, log_compPose_R, log_realPose_R, log_compJoints_R, log_realJoints_R, log_force, p1, log_compJoints_R, log_realPose_L, log_compJoints_L, log_realJoints_L))
-#np.save('./data/experimentLogs300-0,05-1-x', experimentLogs)
+
+experimentLogs = np.hstack((p2, phi_delta, log_compPose_R, log_realPose_R, log_compJoints_R, log_realJoints_R, log_force, p1, log_compJoints_R, log_realPose_L, log_compJoints_L, log_realJoints_L, log_abbPos_R, log_abbPos_L, log_compTime))
+#experimentLogs = np.hstack((p2, phi_delta, log_realPose_R,  p1, log_realPose_L))
+
+#np.save('./plots/control_positionv2/v2-300-351015_S900', experimentLogs)

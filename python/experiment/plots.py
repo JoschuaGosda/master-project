@@ -22,6 +22,40 @@ time = np.linspace(0, round(1.0/80.0 * noSamples), num=noSamples)
 time2 = np.linspace(0, round(1.0/80.0 * len(data2)), num=len(data2))
 #time.shape = (time.size//1, 1)
 
+fig = plt.figure()
+
+p2_is = realPose[:,0:3]
+p2_des = desPose[:, 0:3]
+e = p2_des - p2_is
+ax1 = fig.add_subplot(111)
+ax1.plot(e[0:-10, 1])
+ax1.set_ylabel('mm')
+ax1.set_xlabel('samples')
+plt.show()
+
+
+y = data2[2500:]
+
+n = len(y) # length of the signal
+k = np.arange(n)
+T = n/80
+frq = k/T # two sides frequency range
+frq = frq[:len(frq)//2] # one side frequency range
+
+Y = np.fft.fft(y)/n # dft and normalization
+Y = Y[:n//2]
+
+### new
+fig = plt.figure()
+
+ax3 = fig.add_subplot(111)
+ax3.plot(frq, abs(Y), label='noise with const weight')
+#ax3.plot(frq015, abs(Y015), label='$K_p=0.15$ ')
+ax3.set_xlabel('freq in Hz')
+ax3.set_ylabel('magnitude in dB')
+plt.xscale('log')
+ax3.legend()
+
 
 
 fig = plt.figure()
