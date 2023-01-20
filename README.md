@@ -1,5 +1,5 @@
 # Project description
-To come...
+A Novel Hybrid Force Motion Control Approach to Hot Wire Foam Cutting implemented to a ABB Yumi (IRB14000) robot. See a demonstration video here: [https://youtu.be/Q_Iuq7mRmcw](https://youtu.be/Q_Iuq7mRmcw)
 
 # Setup 
 ## Kinematics implementation
