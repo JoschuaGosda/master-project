@@ -98,16 +98,3 @@ pip install -e .
 ```
 
 5. Install all other dependencies with `pip install -r requirements.txt`
-
-# Troubles
-Compiling the project with cmake runs without errors but when trying to import the python binding the following error appears:
-`ImportError: /home/joschua/Coding/forceControl/master-project/c++/build/example.cpython-38-x86_64-linux-gnu.so: undefined symbol: _Z3gpmRN5Eigen6MatrixIdLi6ELi1ELi0ELi6ELi1EEES2_RNS0_IdLi7ELi1ELi0ELi7ELi1EEES4_S4_ddi`
-The error can be demangled using an online demangler like [https://demangler.com](https://demangler.com)
-The python binding code (the generated *.so file) can be imported by running `import example` within an interactive python session. An official example can be found [here](https://pybind11.readthedocs.io/en/stable/basics.html) 
-
-
-
-
-
-
-
